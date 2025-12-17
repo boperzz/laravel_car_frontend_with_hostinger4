@@ -46,17 +46,15 @@
 
     function toRelativeRoot(path) {
         var pathname = (global.location && global.location.pathname) ? global.location.pathname : '/';
+        var hostname = (global.location && global.location.hostname) ? global.location.hostname : '';
         var segments = pathname.split('/').filter(function (s) {
             return !!s;
         });
 
         var root = '/';
-        if (segments.length > 0) {
-            var first = segments[0];
-            var looksLikeFile = /\.[A-Za-z0-9]+$/.test(first);
-            if (!looksLikeFile) {
-                root = '/' + first + '/';
-            }
+        var isGitHubPages = /github\.io$/i.test(hostname);
+        if (isGitHubPages && segments.length > 0) {
+            root = '/' + segments[0] + '/';
         }
 
         var cleaned = String(path || '').replace(/^\/+/, '');

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Appointments</title>
+
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/role-guard.js"></script>
+    <script src="../../js/logout.js"></script>
+</head>
+<body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <a href="../../index.html" class="flex items-center">
+                    <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-2 mr-3">
+                        <i class="fas fa-car text-white text-xl"></i>
+                    </div>
+                    <span class="text-xl font-bold">Car Maintenance</span>
+                </a>
+                <div class="flex items-center space-x-3">
+                    <a href="../dashboard.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Admin Dashboard</a>
+                    <button onclick="Logout.logout()" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <h1 class="text-2xl font-bold"><i class="fas fa-calendar-alt mr-2"></i>All Appointments</h1>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+                <select id="filter-status" class="border rounded px-3 py-2">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <input id="filter-date" type="date" class="border rounded px-3 py-2" />
+                <button id="btn-apply" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Apply</button>
+                <button id="btn-clear" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Clear</button>
+            </div>
+        </div>
+
+        <div id="appts-loading" class="text-center py-6 text-blue-600">
+            <i class="fas fa-spinner fa-spin mr-2"></i>Loading appointments...
+        </div>
+
+        <div id="appts-error" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-md mb-6" role="alert"></div>
+
+        <div class="bg-white rounded-lg shadow overflow-hidden hidden" id="appts-table-wrapper">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date/Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Staff</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="appts-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        $(function () {
+            if (!RoleGuard.requireRole(['admin'])) {
+                return;
+            }
+
+            $('#btn-apply').on('click', function () {
+                loadAppointments();
+            });
+
+            $('#btn-clear').on('click', function () {
+                $('#filter-status').val('all');
+                $('#filter-date').val('');
+                loadAppointments();
+            });
+
+            loadAppointments();
+        });
+
+        function showError(message) {
+            $('#appts-loading').addClass('hidden');
+            $('#appts-table-wrapper').addClass('hidden');
+            $('#appts-error').removeClass('hidden').text(message || 'Failed to load appointments.');
+        }
+
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatDateTime(iso) {
+            if (!iso) return '-';
+            try {
+                return new Date(iso).toLocaleString();
+            } catch (e) {
+                return iso;
+            }
+        }
+
+        function statusBadge(status) {
+            var s = (status || '').toLowerCase();
+            var cls = 'bg-blue-100 text-blue-800';
+            if (s === 'completed') cls = 'bg-green-100 text-green-800';
+            else if (s === 'pending') cls = 'bg-yellow-100 text-yellow-800';
+            else if (s === 'cancelled') cls = 'bg-gray-100 text-gray-800';
+            else if (s === 'in_progress') cls = 'bg-purple-100 text-purple-800';
+            return '<span class="px-2 py-1 text-xs font-semibold rounded-full ' + cls + '">' + escapeHtml(s ? (s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')) : '-') + '</span>';
+        }
+
+        function loadAppointments() {
+            $('#appts-loading').removeClass('hidden');
+            $('#appts-error').addClass('hidden').text('');
+
+            var status = $('#filter-status').val();
+            var date = $('#filter-date').val();
+
+            var url = Api.getBaseUrl() + '/admin/appointments';
+            var params = [];
+            if (status && status !== 'all') params.push('status=' + encodeURIComponent(status));
+            if (date) params.push('date=' + encodeURIComponent(date));
+            if (params.length) url += '?' + params.join('&');
+
+            Api.request({
+                url: url,
+                method: 'GET'
+            }).done(function (res) {
+                var items = res && res.data && res.data.appointments ? res.data.appointments : [];
+
+                if (!items.length) {
+                    $('#appts-tbody').html('<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No appointments found.</td></tr>');
+                } else {
+                    var html = '';
+                    items.forEach(function (a) {
+                        var customer = a.user ? (a.user.name || a.user.email) : '-';
+                        var vehicle = a.vehicle ? (a.vehicle.full_name || a.vehicle.license_plate) : '-';
+                        var staff = a.staff ? (a.staff.name || a.staff.email) : 'Unassigned';
+
+                        html += '<tr>' +
+                            '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(formatDateTime(a.appointment_date)) + '</td>' +
+                            '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(customer) + '</td>' +
+                            '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(vehicle) + '</td>' +
+                            '<td class="px-6 py-4 whitespace-nowrap">' + statusBadge(a.status) + '</td>' +
+                            '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(staff) + '</td>' +
+                            '<td class="px-6 py-4 whitespace-nowrap text-right text-sm">' +
+                                '<a href="show.html?id=' + encodeURIComponent(a.id) + '" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-3 py-1 rounded transition text-sm font-medium">View</a>' +
+                            '</td>' +
+                        '</tr>';
+                    });
+                    $('#appts-tbody').html(html);
+                }
+
+                $('#appts-loading').addClass('hidden');
+                $('#appts-table-wrapper').removeClass('hidden');
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                showError((json && json.message) ? json.message : 'Failed to load appointments.');
+            });
+        }
+    </script>
+</body>
+</html>

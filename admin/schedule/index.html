@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Schedule</title>
+
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/role-guard.js"></script>
+    <script src="../../js/logout.js"></script>
+</head>
+<body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <a href="../../index.html" class="flex items-center">
+                    <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-2 mr-3">
+                        <i class="fas fa-car text-white text-xl"></i>
+                    </div>
+                    <span class="text-xl font-bold">Car Maintenance</span>
+                </a>
+                <div class="flex items-center space-x-3">
+                    <a href="../dashboard.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Admin Dashboard</a>
+                    <button onclick="Logout.logout()" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <h1 class="text-2xl font-bold mb-6"><i class="fas fa-calendar-times mr-2"></i>Shop Schedule</h1>
+
+        <div id="page-loading" class="text-center py-6 text-blue-600">
+            <i class="fas fa-spinner fa-spin mr-2"></i>Loading schedule...
+        </div>
+
+        <div id="page-error" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-md mb-6" role="alert"></div>
+
+        <div id="page-content" class="hidden space-y-6">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-4">Staff Schedules</h2>
+                <div id="staff-schedules"></div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-4">Blackout Dates</h2>
+
+                <div id="blackout-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700"></div>
+
+                <form id="blackout-form" class="mb-4">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <input type="date" name="date" id="blackout-date" required class="border rounded px-3 py-2">
+                        <input type="text" name="reason" id="blackout-reason" placeholder="Reason" class="border rounded px-3 py-2">
+                        <button type="submit" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                            <i class="fas fa-ban mr-2"></i>Add Blackout
+                        </button>
+                    </div>
+                </form>
+
+                <div class="space-y-2" id="blackout-list"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        var DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+
+        $(function () {
+            if (!RoleGuard.requireRole(['admin'])) {
+                return;
+            }
+
+            $('#blackout-form').on('submit', function (e) {
+                e.preventDefault();
+                createBlackout();
+            });
+
+            loadSchedule();
+        });
+
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function showError(message) {
+            $('#page-loading').addClass('hidden');
+            $('#page-content').addClass('hidden');
+            $('#page-error').removeClass('hidden').text(message || 'Failed to load schedule.');
+        }
+
+        function loadSchedule() {
+            $('#page-loading').removeClass('hidden');
+            $('#page-error').addClass('hidden').text('');
+
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/schedule',
+                method: 'GET'
+            }).done(function (res) {
+                var staff = res && res.data && res.data.staff ? res.data.staff : [];
+                var blackouts = res && res.data && res.data.blackouts ? res.data.blackouts : [];
+
+                renderStaffSchedules(staff);
+                renderBlackouts(blackouts);
+
+                $('#page-loading').addClass('hidden');
+                $('#page-content').removeClass('hidden');
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                showError((json && json.message) ? json.message : 'Failed to load schedule.');
+            });
+        }
+
+        function renderStaffSchedules(staff) {
+            if (!staff.length) {
+                $('#staff-schedules').html('<p class="text-gray-500">No staff members found.</p>');
+                return;
+            }
+
+            var html = '';
+            staff.forEach(function (s) {
+                html += '<div class="mb-6 border-b pb-4">' +
+                    '<h3 class="font-medium mb-2">' + escapeHtml(s.name || s.email || ('Staff #' + s.id)) + '</h3>';
+
+                var schedulesByDay = {};
+                (s.schedules || []).forEach(function (sch) {
+                    schedulesByDay[sch.day_of_week] = sch;
+                });
+
+                DAYS.forEach(function (day) {
+                    var sch = schedulesByDay[day] || {};
+                    var start = sch.start_time || '09:00';
+                    var end = sch.end_time || '17:00';
+
+                    html += '<form class="inline-block mr-2 mb-2 staff-schedule-form">' +
+                        '<input type="hidden" name="staff_id" value="' + escapeHtml(s.id) + '">' +
+                        '<input type="hidden" name="day_of_week" value="' + escapeHtml(day) + '">' +
+                        '<span class="text-sm w-24 inline-block">' + escapeHtml(day.charAt(0).toUpperCase() + day.slice(1)) + ':</span>' +
+                        '<input type="time" name="start_time" value="' + escapeHtml(start) + '" class="border rounded px-2 py-1 text-sm">' +
+                        '<input type="time" name="end_time" value="' + escapeHtml(end) + '" class="border rounded px-2 py-1 text-sm">' +
+                        '<button type="submit" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-3 py-1 rounded text-sm transition font-medium">Save</button>' +
+                    '</form>';
+                });
+
+                html += '</div>';
+            });
+
+            $('#staff-schedules').html(html);
+        }
+
+        $(document).on('submit', '.staff-schedule-form', function (e) {
+            e.preventDefault();
+
+            var $form = $(this);
+            var payload = {
+                staff_id: $form.find('input[name="staff_id"]').val(),
+                day_of_week: $form.find('input[name="day_of_week"]').val(),
+                start_time: $form.find('input[name="start_time"]').val(),
+                end_time: $form.find('input[name="end_time"]').val()
+            };
+
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/schedule/staff',
+                method: 'POST',
+                data: payload,
+                headers: { 'Accept': 'application/json' }
+            }).done(function () {
+                loadSchedule();
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                alert((json && json.message) ? json.message : 'Failed to save schedule.');
+            });
+        });
+
+        function renderBlackouts(blackouts) {
+            if (!blackouts.length) {
+                $('#blackout-list').html('<p class="text-gray-500">No blackout dates.</p>');
+                return;
+            }
+
+            var html = '';
+            blackouts.forEach(function (b) {
+                var label = (b.date || '-') + (b.reason ? (' - ' + b.reason) : '');
+                html += '<div class="flex justify-between items-center p-3 bg-gray-50 rounded">' +
+                    '<span>' + escapeHtml(label) + '</span>' +
+                    '<button data-id="' + escapeHtml(b.id) + '" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-3 py-1 rounded text-sm transition font-medium btn-remove-blackout">Remove</button>' +
+                '</div>';
+            });
+
+            $('#blackout-list').html(html);
+        }
+
+        function createBlackout() {
+            $('#blackout-error').addClass('hidden').text('');
+
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/schedule/blackouts',
+                method: 'POST',
+                data: {
+                    date: $('#blackout-date').val(),
+                    reason: $('#blackout-reason').val()
+                },
+                headers: { 'Accept': 'application/json' }
+            }).done(function () {
+                $('#blackout-date').val('');
+                $('#blackout-reason').val('');
+                loadSchedule();
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                $('#blackout-error').removeClass('hidden').text((json && json.message) ? json.message : 'Failed to add blackout date.');
+            });
+        }
+
+        $(document).on('click', '.btn-remove-blackout', function () {
+            var id = $(this).data('id');
+            if (!id) return;
+            if (!confirm('Remove this blackout date?')) return;
+
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/schedule/blackouts/' + encodeURIComponent(id),
+                method: 'DELETE'
+            }).done(function () {
+                loadSchedule();
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                alert((json && json.message) ? json.message : 'Failed to remove blackout.');
+            });
+        });
+    </script>
+</body>
+</html>

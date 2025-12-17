@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Staff Member</title>
+
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/role-guard.js"></script>
+    <script src="../../js/logout.js"></script>
+</head>
+<body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <a href="../../index.html" class="flex items-center">
+                    <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-2 mr-3">
+                        <i class="fas fa-car text-white text-xl"></i>
+                    </div>
+                    <span class="text-xl font-bold">Car Maintenance</span>
+                </a>
+                <div class="flex items-center space-x-3">
+                    <a href="index.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Back to Staff</a>
+                    <button onclick="Logout.logout()" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="max-w-2xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold"><i class="fas fa-user-edit mr-2"></i>Edit Staff Member</h1>
+                <a href="index.html" class="text-gray-600 hover:text-gray-800"><i class="fas fa-arrow-left mr-1"></i>Back to Staff</a>
+            </div>
+
+            <div id="page-loading" class="text-center py-6 text-blue-600">
+                <i class="fas fa-spinner fa-spin mr-2"></i>Loading staff member...
+            </div>
+
+            <div id="form-error" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-lg"></div>
+            <div id="form-success" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800"></div>
+
+            <div class="bg-white rounded-lg shadow p-6 hidden" id="form-wrapper">
+                <form id="staff-edit-form" enctype="multipart/form-data">
+                    <input type="hidden" id="staff_id" name="staff_id" value="">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="username" class="block text-sm font-medium text-gray-700 mb-2"><i class="fas fa-user mr-2 text-gray-400"></i>Username <span class="text-red-500">*</span></label>
+                            <input id="username" type="text" name="username" required autofocus class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Choose a username">
+                            <p class="mt-1 text-sm text-red-600 hidden" id="err-username"></p>
+                        </div>
+
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2"><i class="fas fa-envelope mr-2 text-gray-400"></i>Email Address <span class="text-red-500">*</span></label>
+                            <input id="email" type="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Enter email address">
+                            <p class="mt-1 text-sm text-red-600 hidden" id="err-email"></p>
+                        </div>
+
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-2"><i class="fas fa-user mr-2 text-gray-400"></i>First Name <span class="text-red-500">*</span></label>
+                            <input id="name" type="text" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Enter first name">
+                            <p class="mt-1 text-sm text-red-600 hidden" id="err-name"></p>
+                        </div>
+
+                        <div>
+                            <label for="last_name" class="block text-sm font-medium text-gray-700 mb-2"><i class="fas fa-user mr-2 text-gray-400"></i>Last Name <span class="text-red-500">*</span></label>
+                            <input id="last_name" type="text" name="last_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Enter last name">
+                            <p class="mt-1 text-sm text-red-600 hidden" id="err-last_name"></p>
+                        </div>
+
+                        <div>
+                            <label for="middle_name" class="block text-sm font-medium text-gray-700 mb-2"><i class="fas fa-user mr-2 text-gray-400"></i>Middle Name</label>
+                            <input id="middle_name" type="text" name="middle_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Enter middle name (optional)">
+                            <p class="mt-1 text-sm text-red-600 hidden" id="err-middle_name"></p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fas fa-image mr-2 text-gray-400"></i>Profile Picture <span class="text-gray-400 text-xs">(Optional)</span></label>
+                            <div id="current-picture" class="mb-2 hidden">
+                                <img id="current-picture-img" src="" alt="Current profile picture" class="w-20 h-20 rounded-full object-cover border-2 border-gray-300" onerror="this.style.display='none';">
+                                <p class="text-xs text-gray-500 mt-1">Current picture</p>
+                            </div>
+                            <input id="profile_picture" type="file" name="profile_picture" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-2 file:border-black file:text-black file:bg-transparent file:hover:bg-black file:hover:text-white file:cursor-pointer file:transition file:font-semibold border-2 border-black rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            <p class="mt-1 text-sm text-red-600 hidden" id="err-profile_picture"></p>
+                            <p class="mt-2 text-xs text-gray-500"><i class="fas fa-info-circle mr-1"></i>Max file size: 2MB. Accepted formats: JPG, PNG, GIF</p>
+                        </div>
+
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2"><i class="fas fa-lock mr-2 text-gray-400"></i>New Password <span class="text-gray-400 text-xs">(Leave blank to keep current)</span></label>
+                            <div class="relative">
+                                <input id="password" type="password" name="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Enter new password (optional)">
+                                <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none" onclick="togglePassword('password')">
+                                    <i class="fas fa-eye" id="password-toggle"></i>
+                                </button>
+                            </div>
+                            <p class="mt-1 text-sm text-red-600 hidden" id="err-password"></p>
+                            <p class="mt-1 text-xs text-gray-500">Leave blank to keep current password.</p>
+                        </div>
+
+                        <div>
+                            <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-2"><i class="fas fa-lock mr-2 text-gray-400"></i>Confirm New Password</label>
+                            <div class="relative">
+                                <input id="password_confirmation" type="password" name="password_confirmation" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Confirm new password">
+                                <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none" onclick="togglePassword('password_confirmation')">
+                                    <i class="fas fa-eye" id="password_confirmation-toggle"></i>
+                                </button>
+                            </div>
+                            <p class="mt-1 text-sm text-red-600 hidden" id="err-password_confirmation"></p>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center">
+                        <a href="index.html" class="px-6 py-3 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white rounded-lg transition font-medium"><i class="fas fa-times mr-2"></i>Cancel</a>
+                        <button type="submit" class="px-8 py-3 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white rounded-lg transition font-semibold shadow-md hover:shadow-lg"><i class="fas fa-save mr-2"></i>Update Staff Member</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        $(function () {
+            if (!RoleGuard.requireRole(['admin'])) {
+                return;
+            }
+
+            var id = getQueryParam('id');
+            if (!id) {
+                $('#page-loading').addClass('hidden');
+                $('#form-error').removeClass('hidden').text('Missing staff id.');
+                return;
+            }
+
+            $('#staff_id').val(id);
+            loadStaff(id);
+
+            $('#staff-edit-form').on('submit', function (e) {
+                e.preventDefault();
+                submitUpdate();
+            });
+        });
+
+        function getQueryParam(name) {
+            var params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        function togglePassword(fieldId) {
+            var passwordInput = document.getElementById(fieldId);
+            var passwordToggle = document.getElementById(fieldId + '-toggle');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordToggle.classList.remove('fa-eye');
+                passwordToggle.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                passwordToggle.classList.remove('fa-eye-slash');
+                passwordToggle.classList.add('fa-eye');
+            }
+        }
+
+        function clearFieldErrors() {
+            $('[id^="err-"]').addClass('hidden').text('');
+            $('#form-error').addClass('hidden').text('');
+            $('#form-success').addClass('hidden').text('');
+        }
+
+        function setFieldErrors(errors) {
+            if (!errors) return;
+            Object.keys(errors).forEach(function (key) {
+                var el = $('#err-' + key);
+                if (el.length && errors[key] && errors[key].length) {
+                    el.removeClass('hidden').text(errors[key][0]);
+                }
+            });
+        }
+
+        function loadStaff(id) {
+            clearFieldErrors();
+            $('#page-loading').removeClass('hidden');
+
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/staff/' + encodeURIComponent(id),
+                method: 'GET'
+            }).done(function (res) {
+                var staff = res && res.data && res.data.staff ? res.data.staff : null;
+                if (!staff) {
+                    $('#page-loading').addClass('hidden');
+                    $('#form-error').removeClass('hidden').text('Staff member not found.');
+                    return;
+                }
+
+                $('#username').val(staff.username || '');
+                $('#email').val(staff.email || '');
+                $('#name').val(staff.name || '');
+                $('#last_name').val(staff.last_name || '');
+                $('#middle_name').val(staff.middle_name || '');
+
+                if (staff.profile_picture) {
+                    $('#current-picture-img').attr('src', staff.profile_picture);
+                    $('#current-picture').removeClass('hidden');
+                }
+
+                $('#page-loading').addClass('hidden');
+                $('#form-wrapper').removeClass('hidden');
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                $('#page-loading').addClass('hidden');
+                $('#form-error').removeClass('hidden').text((json && json.message) ? json.message : 'Failed to load staff member.');
+            });
+        }
+
+        function submitUpdate() {
+            clearFieldErrors();
+
+            var id = $('#staff_id').val();
+            if (!id) {
+                $('#form-error').removeClass('hidden').text('Missing staff id.');
+                return;
+            }
+
+            var form = document.getElementById('staff-edit-form');
+            var formData = new FormData(form);
+
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/staff/' + encodeURIComponent(id),
+                method: 'PUT',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }).done(function () {
+                $('#form-success').removeClass('hidden').text('Staff member updated successfully. Redirecting...');
+                setTimeout(function () {
+                    window.location.href = 'index.html';
+                }, 700);
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                if (xhr && xhr.status === 422 && json && json.errors) {
+                    setFieldErrors(json.errors);
+                    $('#form-error').removeClass('hidden').html('<div class="flex items-center"><i class="fas fa-exclamation-circle text-red-600 mr-2"></i><strong class="text-red-800">Please fix the highlighted fields.</strong></div>');
+                    return;
+                }
+                $('#form-error').removeClass('hidden').text((json && json.message) ? json.message : 'Failed to update staff member.');
+            });
+        }
+    </script>
+</body>
+</html>

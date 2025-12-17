@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Service Type</title>
+
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/role-guard.js"></script>
+    <script src="../../js/logout.js"></script>
+</head>
+<body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <a href="../../index.html" class="flex items-center">
+                    <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-2 mr-3">
+                        <i class="fas fa-car text-white text-xl"></i>
+                    </div>
+                    <span class="text-xl font-bold">Car Maintenance</span>
+                </a>
+                <div class="flex items-center space-x-3">
+                    <a href="index.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Back to Services</a>
+                    <button onclick="Logout.logout()" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="max-w-md">
+            <h1 class="text-2xl font-bold mb-6"><i class="fas fa-save mr-2"></i>Edit Service Type</h1>
+
+            <div id="page-loading" class="text-center py-6 text-blue-600">
+                <i class="fas fa-spinner fa-spin mr-2"></i>Loading service...
+            </div>
+
+            <div id="form-error" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-lg"></div>
+
+            <div class="bg-white rounded-lg shadow p-6 hidden" id="form-wrapper">
+                <form id="service-edit-form">
+                    <input type="hidden" id="service_id" value="">
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1" for="name">Name</label>
+                        <input type="text" id="name" name="name" required class="w-full border rounded px-3 py-2">
+                        <p class="mt-1 text-sm text-red-600 hidden" id="err-name"></p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1" for="description">Description</label>
+                        <textarea id="description" name="description" rows="3" class="w-full border rounded px-3 py-2"></textarea>
+                        <p class="mt-1 text-sm text-red-600 hidden" id="err-description"></p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1" for="price">Price</label>
+                        <input type="number" id="price" name="price" step="0.01" required class="w-full border rounded px-3 py-2">
+                        <p class="mt-1 text-sm text-red-600 hidden" id="err-price"></p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1" for="duration_minutes">Duration (minutes)</label>
+                        <input type="number" id="duration_minutes" name="duration_minutes" required class="w-full border rounded px-3 py-2">
+                        <p class="mt-1 text-sm text-red-600 hidden" id="err-duration_minutes"></p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="inline-flex items-center gap-2">
+                            <input type="checkbox" id="is_active" name="is_active" value="1">
+                            <span>Active</span>
+                        </label>
+                        <p class="mt-1 text-sm text-red-600 hidden" id="err-is_active"></p>
+                    </div>
+
+                    <div class="flex gap-4 justify-end mt-6">
+                        <a href="index.html" class="px-6 py-2 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white rounded-lg transition font-medium">Cancel</a>
+                        <button type="submit" class="px-6 py-2 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white rounded-lg transition font-semibold">
+                            <i class="fas fa-save mr-2"></i>Update
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        $(function () {
+            if (!RoleGuard.requireRole(['admin'])) {
+                return;
+            }
+
+            var id = getQueryParam('id');
+            if (!id) {
+                $('#page-loading').addClass('hidden');
+                $('#form-error').removeClass('hidden').text('Missing service id.');
+                return;
+            }
+
+            $('#service_id').val(id);
+            loadService(id);
+
+            $('#service-edit-form').on('submit', function (e) {
+                e.preventDefault();
+                submitUpdate();
+            });
+        });
+
+        function getQueryParam(name) {
+            var params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        function clearFieldErrors() {
+            $('[id^="err-"]').addClass('hidden').text('');
+            $('#form-error').addClass('hidden').text('');
+        }
+
+        function setFieldErrors(errors) {
+            if (!errors) return;
+            Object.keys(errors).forEach(function (key) {
+                var el = $('#err-' + key);
+                if (el.length && errors[key] && errors[key].length) {
+                    el.removeClass('hidden').text(errors[key][0]);
+                }
+            });
+        }
+
+        function loadService(id) {
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/services/' + encodeURIComponent(id),
+                method: 'GET'
+            }).done(function (res) {
+                var service = res && res.data && res.data.service ? res.data.service : null;
+                if (!service) {
+                    $('#page-loading').addClass('hidden');
+                    $('#form-error').removeClass('hidden').text('Service not found.');
+                    return;
+                }
+
+                $('#name').val(service.name || '');
+                $('#description').val(service.description || '');
+                $('#price').val(service.price != null ? service.price : '');
+                $('#duration_minutes').val(service.duration_minutes != null ? service.duration_minutes : '');
+                $('#is_active').prop('checked', !!service.is_active);
+
+                $('#page-loading').addClass('hidden');
+                $('#form-wrapper').removeClass('hidden');
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                $('#page-loading').addClass('hidden');
+                $('#form-error').removeClass('hidden').text((json && json.message) ? json.message : 'Failed to load service.');
+            });
+        }
+
+        function submitUpdate() {
+            clearFieldErrors();
+
+            var id = $('#service_id').val();
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/services/' + encodeURIComponent(id),
+                method: 'PUT',
+                data: {
+                    name: $('#name').val(),
+                    description: $('#description').val(),
+                    price: $('#price').val(),
+                    duration_minutes: $('#duration_minutes').val(),
+                    is_active: $('#is_active').is(':checked') ? 1 : 0
+                },
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }).done(function () {
+                window.location.href = 'index.html';
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                if (xhr && xhr.status === 422 && json && json.errors) {
+                    setFieldErrors(json.errors);
+                    $('#form-error').removeClass('hidden').text('Please fix the highlighted fields.');
+                    return;
+                }
+                $('#form-error').removeClass('hidden').text((json && json.message) ? json.message : 'Failed to update service.');
+            });
+        }
+    </script>
+</body>
+</html>
