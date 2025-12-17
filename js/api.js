@@ -45,21 +45,22 @@
     }
 
     function toRelativeRoot(path) {
-        var depth = 0;
+        var pathname = (global.location && global.location.pathname) ? global.location.pathname : '/';
+        var segments = pathname.split('/').filter(function (s) {
+            return !!s;
+        });
 
-        if (global.location && global.location.pathname) {
-            var segments = global.location.pathname.split('/').filter(function (s) {
-                return !!s;
-            });
-
-            depth = Math.max(0, segments.length - 2);
+        var root = '/';
+        if (segments.length > 0) {
+            var first = segments[0];
+            var looksLikeFile = /\.[A-Za-z0-9]+$/.test(first);
+            if (!looksLikeFile) {
+                root = '/' + first + '/';
+            }
         }
 
-        var prefix = '';
-        for (var i = 0; i < depth; i++) {
-            prefix += '../';
-        }
-        return prefix + path;
+        var cleaned = String(path || '').replace(/^\/+/, '');
+        return root + cleaned;
     }
 
     function request(opts) {
