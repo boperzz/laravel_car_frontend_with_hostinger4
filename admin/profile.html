@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Profile</title>
+
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/role-guard.js"></script>
+    <script src="../js/logout.js"></script>
+
+    <style>
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
+    <div class="min-h-screen">
+        <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16 items-center">
+                    <a href="../index.html" class="flex items-center">
+                        <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-2 mr-3">
+                            <i class="fas fa-car text-white text-xl"></i>
+                        </div>
+                        <span class="text-xl font-bold">Car Maintenance</span>
+                    </a>
+                    <div class="flex items-center space-x-3">
+                        <div class="px-4 py-2 rounded-lg border-2 border-black bg-transparent font-semibold flex items-center gap-2">
+                            <i class="fas fa-user"></i>
+                            <span id="nav-user">User</span>
+                        </div>
+                        <a href="dashboard.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Admin Dashboard</a>
+                        <button onclick="Logout.logout()" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div id="alert-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4"></div>
+
+        <header class="bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-200">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    <i class="fas fa-user mr-2"></i>Profile
+                </h2>
+            </div>
+        </header>
+
+        <main class="py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="py-12">
+                    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+                        <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                            <div class="max-w-xl">
+                                <section>
+                                    <header>
+                                        <h2 class="text-lg font-medium text-gray-900">Profile Information</h2>
+                                        <p class="mt-1 text-sm text-gray-600">Update your account's profile information and email address.</p>
+                                    </header>
+
+                                    <form id="profile-form" enctype="multipart/form-data" class="mt-6 space-y-6">
+                                        <div>
+                                            <label for="profile_picture" class="block text-sm font-medium text-gray-700">Profile Picture</label>
+                                            <div id="profile-picture-preview" class="mt-2 mb-4">
+                                                <img id="profile-img" src="" alt="Profile Picture" class="w-32 h-32 object-cover rounded-full border-2 border-gray-300 hidden">
+                                                <p id="no-profile-img" class="text-xs text-gray-500 mt-2">No profile picture</p>
+                                            </div>
+                                            <input
+                                                id="profile_picture"
+                                                name="profile_picture"
+                                                type="file"
+                                                accept="image/*"
+                                                class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-2 file:border-black file:text-black file:bg-transparent file:hover:bg-black file:hover:text-white file:cursor-pointer file:transition file:font-semibold border-2 border-black rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                            >
+                                            <p class="mt-1 text-xs text-gray-500">
+                                                <i class="fas fa-info-circle mr-1"></i>Max file size: 2MB. Accepted formats: JPG, PNG, GIF
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                                            <input id="username" name="username" type="text" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required autofocus autocomplete="username" />
+                                        </div>
+
+                                        <div>
+                                            <label for="name" class="block text-sm font-medium text-gray-700">First Name</label>
+                                            <input id="name" name="name" type="text" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required autocomplete="given-name" />
+                                        </div>
+
+                                        <div>
+                                            <label for="middle_name" class="block text-sm font-medium text-gray-700">Middle Name</label>
+                                            <input id="middle_name" name="middle_name" type="text" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" autocomplete="additional-name" />
+                                        </div>
+
+                                        <div>
+                                            <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                                            <input id="last_name" name="last_name" type="text" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" autocomplete="family-name" />
+                                        </div>
+
+                                        <div>
+                                            <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                                            <input id="email" name="email" type="email" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required autocomplete="email" />
+                                        </div>
+
+                                        <div class="flex items-center gap-4">
+                                            <button type="submit" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white font-semibold px-4 py-2 rounded-lg transition">Save</button>
+                                            <p id="profile-saved" class="text-sm text-gray-600 hidden">Saved.</p>
+                                        </div>
+                                    </form>
+                                </section>
+                            </div>
+                        </div>
+
+                        <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                            <div class="max-w-xl">
+                                <section>
+                                    <header>
+                                        <h2 class="text-lg font-medium text-gray-900">Update Password</h2>
+                                        <p class="mt-1 text-sm text-gray-600">Ensure your account is using a long, random password to stay secure.</p>
+                                    </header>
+
+                                    <form id="password-form" class="mt-6 space-y-6">
+                                        <div>
+                                            <label for="current_password" class="block text-sm font-medium text-gray-700">Current Password</label>
+                                            <input id="current_password" name="current_password" type="password" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" autocomplete="current-password" />
+                                        </div>
+
+                                        <div>
+                                            <label for="password" class="block text-sm font-medium text-gray-700">New Password</label>
+                                            <input id="password" name="password" type="password" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" autocomplete="new-password" />
+                                        </div>
+
+                                        <div>
+                                            <label for="password_confirmation" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+                                            <input id="password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" autocomplete="new-password" />
+                                        </div>
+
+                                        <div class="flex items-center gap-4">
+                                            <button type="submit" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white font-semibold px-4 py-2 rounded-lg transition">Save</button>
+                                            <p id="password-saved" class="text-sm text-gray-600 hidden">Saved.</p>
+                                        </div>
+                                    </form>
+                                </section>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            if (!RoleGuard.requireRole(['admin'])) {
+                return;
+            }
+
+            var currentUser = Auth.getUser();
+            $('#nav-user').text(currentUser ? (currentUser.name || currentUser.username || currentUser.email || currentUser.id) : 'User');
+
+            loadUserProfile();
+
+            $('#profile-form').on('submit', handleProfileUpdate);
+            $('#password-form').on('submit', handlePasswordUpdate);
+        });
+
+        function loadUserProfile() {
+            Api.request({
+                url: Api.getBaseUrl() + '/me',
+                method: 'GET'
+            }).done(function(res) {
+                var user = res && res.data && res.data.user;
+                if (!user) {
+                    showAlert('error', 'Failed to load profile.');
+                    return;
+                }
+
+                localStorage.setItem('currentUser', JSON.stringify(user));
+
+                $('#username').val(user.username || '');
+                $('#name').val(user.name || '');
+                $('#middle_name').val(user.middle_name || '');
+                $('#last_name').val(user.last_name || '');
+                $('#email').val(user.email || '');
+
+                $('#nav-user').text(user.name || user.username || user.email || user.id || 'User');
+
+                if (user.profile_picture) {
+                    $('#profile-img').attr('src', user.profile_picture).removeClass('hidden');
+                    $('#no-profile-img').addClass('hidden');
+                }
+            }).fail(function() {
+                showAlert('error', 'Failed to load profile.');
+            });
+        }
+
+        function handleProfileUpdate(e) {
+            e.preventDefault();
+
+            var formData = new FormData(document.getElementById('profile-form'));
+            formData.append('_method', 'PUT');
+
+            Api.request({
+                url: Api.getBaseUrl() + '/me',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false
+            }).done(function(res) {
+                var user = res && res.data && res.data.user;
+                if (user) {
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    $('#nav-user').text(user.name || user.username || user.email || user.id || 'User');
+
+                    if (user.profile_picture) {
+                        $('#profile-img').attr('src', user.profile_picture).removeClass('hidden');
+                        $('#no-profile-img').addClass('hidden');
+                    }
+                }
+
+                $('#profile-saved').removeClass('hidden');
+                setTimeout(function () { $('#profile-saved').addClass('hidden'); }, 2000);
+                showAlert('success', 'Profile updated successfully!');
+            }).fail(function(xhr) {
+                var json = xhr && xhr.responseJSON;
+                showAlert('error', (json && json.message) ? json.message : 'Profile update failed.');
+            });
+        }
+
+        function handlePasswordUpdate(e) {
+            e.preventDefault();
+
+            var payload = {
+                current_password: $('#current_password').val(),
+                password: $('#password').val(),
+                password_confirmation: $('#password_confirmation').val(),
+            };
+
+            Api.request({
+                url: Api.getBaseUrl() + '/me/password',
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }).done(function() {
+                $('#password-form')[0].reset();
+                $('#password-saved').removeClass('hidden');
+                setTimeout(function () { $('#password-saved').addClass('hidden'); }, 2000);
+                showAlert('success', 'Password updated successfully!');
+            }).fail(function(xhr) {
+                var json = xhr && xhr.responseJSON;
+                showAlert('error', (json && json.message) ? json.message : 'Password update failed.');
+            });
+        }
+
+        function showAlert(type, message) {
+            var alertClass = type === 'success'
+                ? 'bg-green-50 border-l-4 border-green-500 text-green-700'
+                : 'bg-red-50 border-l-4 border-red-500 text-red-700';
+
+            var icon = type === 'success'
+                ? '<i class="fas fa-check-circle mr-3 text-xl"></i>'
+                : '<i class="fas fa-exclamation-circle mr-3 text-xl"></i>';
+
+            var alertHtml =
+                '<div class="' + alertClass + ' p-4 rounded-lg shadow-md animate-fade-in-up" role="alert">' +
+                '<div class="flex items-center">' +
+                icon +
+                '<div class="flex-1"><p class="font-semibold">' + (message || '') + '</p></div>' +
+                '<button onclick="this.parentElement.parentElement.remove()" class="ml-auto ' + (type === 'success' ? 'text-green-700 hover:text-green-900' : 'text-red-700 hover:text-red-900') + '">' +
+                '<i class="fas fa-times"></i>' +
+                '</button>' +
+                '</div>' +
+                '</div>';
+
+            $('#alert-container').html(alertHtml);
+        }
+    </script>
+</body>
+</html>
