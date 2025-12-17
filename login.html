@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Maintenance Service - Login</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet" />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    
+    <style>
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="font-sans text-gray-900 antialiased bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 min-h-screen">
+    <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 px-4">
+        <!-- Logo/Brand -->
+        <div class="mb-8 animate-fade-in-up">
+            <div class="flex items-center justify-center">
+                <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl p-5 shadow-xl transform hover:scale-105 transition-transform">
+                    <i class="fas fa-car text-white text-4xl"></i>
+                </div>
+            </div>
+            <h1 class="text-3xl font-extrabold gradient-text mt-6 text-center">Car Maintenance</h1>
+            <p class="text-slate-600 text-center mt-2 text-lg">Service Appointment System</p>
+        </div>
+
+        <!-- Auth Card -->
+        <div class="w-full sm:max-w-md px-6 py-10 bg-white shadow-2xl rounded-3xl overflow-hidden border border-slate-200 animate-fade-in-up">
+            <div class="w-full">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h2>
+                    <p class="text-gray-600">Sign in to your account</p>
+                </div>
+
+                <!-- Alert Container -->
+                <div id="alert-container"></div>
+
+                <!-- Login Form -->
+                <form id="login-form" class="space-y-6">
+                    <!-- Username -->
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user mr-2 text-gray-400"></i>Username
+                        </label>
+                        <input 
+                            id="username" 
+                            type="text" 
+                            name="username" 
+                            required 
+                            autofocus 
+                            autocomplete="username"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                            placeholder="Enter your username"
+                        >
+                        <p id="username-error" class="mt-1 text-sm text-red-600 hidden"></p>
+                    </div>
+
+                    <!-- Password -->
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-lock mr-2 text-gray-400"></i>Password
+                        </label>
+                        <div class="relative">
+                            <input 
+                                id="password" 
+                                type="password" 
+                                name="password" 
+                                required 
+                                autocomplete="current-password"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                placeholder="Enter your password"
+                            >
+                            <button 
+                                type="button" 
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                                onclick="togglePassword()"
+                            >
+                                <i class="fas fa-eye" id="password-toggle"></i>
+                            </button>
+                        </div>
+                        <p id="password-error" class="mt-1 text-sm text-red-600 hidden"></p>
+                    </div>
+
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input 
+                                id="remember_me" 
+                                type="checkbox" 
+                                name="remember" 
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            >
+                            <label for="remember_me" class="ml-2 block text-sm text-gray-700">
+                                Remember me
+                            </label>
+                        </div>
+                        <a 
+                            href="forgot-password.html" 
+                            class="text-sm text-blue-600 hover:text-blue-800 hover:underline transition"
+                        >
+                            Forgot password?
+                        </a>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div>
+                        <button 
+                            type="submit" 
+                            class="w-full border-2 border-black bg-transparent hover:bg-black text-black hover:text-white font-semibold py-3 px-4 rounded-lg transition duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        >
+                            <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Register Link -->
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">
+                        Don't have an account?
+                        <a href="register.html" class="text-blue-600 hover:text-blue-800 font-medium hover:underline">
+                            Create one here
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-8 text-center text-slate-600 text-sm">
+            <p>&copy; 2025 Car Maintenance System. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration: API Base URL
+        function getApiUrl() {
+            return 'https://laravel-car.orbit-node.com/api';
+        }
+
+        $(document).ready(function() {
+            $('#login-form').on('submit', function(e) {
+                e.preventDefault();
+                handleLogin();
+            });
+        });
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const passwordToggle = document.getElementById('password-toggle');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordToggle.classList.remove('fa-eye');
+                passwordToggle.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                passwordToggle.classList.remove('fa-eye-slash');
+                passwordToggle.classList.add('fa-eye');
+            }
+        }
+
+        function showAlert(type, message) {
+            const alertClass = type === 'success' 
+                ? 'bg-green-50 border-l-4 border-green-500 text-green-700' 
+                : 'bg-red-50 border-l-4 border-red-500 text-red-700';
+            
+            const icon = type === 'success' 
+                ? '<i class="fas fa-check-circle mr-3 text-xl"></i>' 
+                : '<i class="fas fa-exclamation-circle mr-3 text-xl"></i>';
+            
+            const alertHtml = `
+                <div class="${alertClass} p-4 rounded-lg shadow-md mb-4" role="alert">
+                    <div class="flex items-center">
+                        ${icon}
+                        <div class="flex-1">
+                            <p class="font-semibold">${message}</p>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-auto ${type === 'success' ? 'text-green-700 hover:text-green-900' : 'text-red-700 hover:text-red-900'}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            $('#alert-container').html(alertHtml);
+        }
+
+        function clearErrors() {
+            $('#username-error').addClass('hidden').text('');
+            $('#password-error').addClass('hidden').text('');
+        }
+
+        function setFieldErrors(errors) {
+            if (!errors) return;
+
+            if (errors.username && errors.username.length) {
+                $('#username-error').removeClass('hidden').text(errors.username[0]);
+            }
+            if (errors.password && errors.password.length) {
+                $('#password-error').removeClass('hidden').text(errors.password[0]);
+            }
+        }
+
+        function handleLogin() {
+            clearErrors();
+
+            const payload = {
+                username: $('#username').val(),
+                password: $('#password').val(),
+            };
+
+            $.ajax({
+                url: `${getApiUrl()}/auth/login`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                headers: {
+                    'Accept': 'application/json',
+                },
+                success: function(res) {
+                    const token = res && res.data && res.data.token;
+                    const user = res && res.data && res.data.user;
+
+                    if (!token || !user) {
+                        showAlert('error', 'Login failed. Please try again.');
+                        return;
+                    }
+
+                    localStorage.setItem('authToken', token);
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+
+                    showAlert('success', 'Login successful.');
+                    setTimeout(function() {
+                        window.location.href = 'index.html';
+                    }, 300);
+                },
+                error: function(xhr) {
+                    const json = xhr && xhr.responseJSON;
+                    if (xhr.status === 422) {
+                        if (json && json.errors) {
+                            setFieldErrors(json.errors);
+                        }
+                        showAlert('error', (json && json.message) ? json.message : 'Invalid credentials.');
+                        return;
+                    }
+
+                    showAlert('error', (json && json.message) ? json.message : 'Login failed. Please try again.');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+

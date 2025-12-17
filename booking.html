@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="">
+    <title>Car Maintenance Service - Book Appointment</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet" />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    
+    <!-- Alpine.js for navigation dropdown -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <style>
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .service-card.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .time-slot.selected {
+            background-color: #1f2937;
+            border-color: #1f2937;
+            color: white;
+        }
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
+    <div class="min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex">
+                        <!-- Logo -->
+                        <div class="shrink-0 flex items-center">
+                            <a href="index.html" class="flex items-center group">
+                                <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-2 mr-3 group-hover:scale-110 transition-transform">
+                                    <i class="fas fa-car text-white text-xl"></i>
+                                </div>
+                                <span class="text-xl font-bold gradient-text">Car Maintenance</span>
+                            </a>
+                        </div>
+                        
+                        <!-- Navigation Links -->
+                        <div class="hidden space-x-2 sm:-my-px sm:ms-10 sm:flex">
+                            <a href="booking.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-indigo-500 text-sm font-medium leading-5 text-gray-900 focus:outline-none focus:border-indigo-700 transition">
+                                <i class="fas fa-calendar-plus mr-2"></i> Book Appointment
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="hidden sm:flex sm:items-center sm:ms-6">
+                        <div class="flex items-center space-x-3">
+                            <a href="login.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                                <i class="fas fa-sign-in-alt mr-2"></i>Login
+                            </a>
+                            <a href="register.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                                <i class="fas fa-user-plus mr-2"></i>Register
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Flash Messages / Alert Container -->
+        <div id="alert-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4"></div>
+
+        <!-- Page Heading -->
+        <header class="bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-200">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center">
+                    <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                        <i class="fas fa-calendar-plus mr-2"></i>Book Appointment
+                    </h2>
+                    <div id="config" class="hidden bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm">
+                        <label class="block font-semibold mb-1">API URL:</label>
+                        <input type="text" id="api-url" value="https://laravel-car.orbit-node.com/api" 
+                            class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="py-6">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <form id="appointment-form">
+                                
+                                <!-- Customer Information Section -->
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Customer Information
+                                    </label>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <label for="customer_name" class="block text-sm font-medium text-gray-700 mb-2">
+                                                Full Name <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" id="customer_name" name="customer_name" required
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label for="customer_email" class="block text-sm font-medium text-gray-700 mb-2">
+                                                Email <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="email" id="customer_email" name="customer_email" required
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label for="customer_phone" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Phone Number
+                                        </label>
+                                        <input type="tel" id="customer_phone" name="customer_phone"
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                </div>
+
+                                <!-- Vehicle Information Section -->
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Vehicle Information
+                                    </label>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <label for="vehicle_make" class="block text-sm font-medium text-gray-700 mb-2">
+                                                Make <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" id="vehicle_make" name="vehicle_make" required
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label for="vehicle_model" class="block text-sm font-medium text-gray-700 mb-2">
+                                                Model <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" id="vehicle_model" name="vehicle_model" required
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <label for="vehicle_year" class="block text-sm font-medium text-gray-700 mb-2">
+                                                Year <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="number" id="vehicle_year" name="vehicle_year" min="1900" max="2025" required
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label for="vehicle_license_plate" class="block text-sm font-medium text-gray-700 mb-2">
+                                                License Plate <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" id="vehicle_license_plate" name="vehicle_license_plate" required
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label for="vehicle_vin" class="block text-sm font-medium text-gray-700 mb-2">
+                                                VIN (Optional)
+                                            </label>
+                                            <input type="text" id="vehicle_vin" name="vehicle_vin" maxlength="17"
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label for="vehicle_color" class="block text-sm font-medium text-gray-700 mb-2">
+                                                Color
+                                            </label>
+                                            <input type="text" id="vehicle_color" name="vehicle_color"
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <label for="vehicle_mileage" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Mileage
+                                        </label>
+                                        <input type="number" id="vehicle_mileage" name="vehicle_mileage" min="0"
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                </div>
+
+                                <!-- Service Selection Section -->
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Select Services <span class="text-red-500">*</span>
+                                    </label>
+                                    <div id="services-loading" class="text-center py-4 text-blue-600">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading services...
+                                    </div>
+                                    <div id="services-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                                </div>
+
+                                <!-- Date & Time Selection Section -->
+                                <div class="mb-6">
+                                    <label for="appointment_date" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Appointment Date & Time <span class="text-red-500">*</span>
+                                    </label>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <input type="date" id="appointment_date" name="appointment_date" required
+                                                min="" 
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Available Time Slots</label>
+                                            <div id="time-slots-container">
+                                                <p class="text-sm text-gray-500">Select a date and services first</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="mt-2 text-sm text-gray-500">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        Shop hours: 8:00 AM - 6:00 PM
+                                    </p>
+                                </div>
+
+                                <!-- Notes Section -->
+                                <div class="mb-6">
+                                    <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Additional Notes (Optional)
+                                    </label>
+                                    <textarea id="notes" name="notes" rows="4"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Any special instructions or concerns..."></textarea>
+                                </div>
+
+                                <!-- Total Price Display -->
+                                <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-lg font-semibold text-gray-700">Estimated Total:</span>
+                                        <span class="text-2xl font-bold text-blue-600" id="total-price">$0.00</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mt-1" id="estimated-duration">Duration: 0 minutes</p>
+                                </div>
+
+                                <!-- Submit Buttons -->
+                                <div class="flex justify-end space-x-4">
+                                    <button type="button" onclick="resetForm()" class="px-6 py-2 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white rounded-lg transition font-medium">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" id="submit-btn" class="px-6 py-2 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white rounded-lg transition font-semibold">
+                                        <i class="fas fa-calendar-check mr-2"></i>Book Appointment
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Global variables
+        let services = [];
+        let selectedServices = [];
+        let selectedDate = null;
+        let selectedTimeSlot = null;
+        let availableSlots = [];
+
+        // Configuration: API Base URL
+        function getApiUrl() {
+            const url = document.getElementById('api-url').value.trim();
+            return url.endsWith('/') ? url.slice(0, -1) : url;
+        }
+
+        // Initialize on page load
+        $(document).ready(function() {
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            $('#appointment_date').attr('min', today);
+            
+            loadServices();
+            setupEventListeners();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            $('#appointment_date').on('change', function() {
+                selectedDate = $(this).val();
+                selectedTimeSlot = null;
+                if (selectedDate && selectedServices.length > 0) {
+                    loadAvailableSlots();
+                }
+            });
+
+            $('#appointment-form').on('submit', handleFormSubmit);
+        }
+
+        // Load services from API
+        function loadServices() {
+            const apiUrl = getApiUrl();
+            
+            $.ajax({
+                url: `${apiUrl}/public/services`,
+                method: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success && response.data) {
+                        services = response.data;
+                        renderServices();
+                        $('#services-loading').addClass('hidden');
+                    } else {
+                        showAlert('error', 'Failed to load services. Please try again.');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading services:', error);
+                    showAlert('error', 'Failed to connect to the server. Please check your API URL configuration.');
+                    $('#services-loading').html('<p class="text-red-600">Error loading services. Please check API URL.</p>');
+                }
+            });
+        }
+
+        // Render services
+        function renderServices() {
+            const container = $('#services-container');
+            container.empty();
+
+            if (services.length === 0) {
+                container.html('<p class="text-gray-600">No services available at this time.</p>');
+                return;
+            }
+
+            services.forEach(service => {
+                const card = $(`
+                    <div class="border rounded-lg p-4 hover:bg-gray-50 transition service-card" data-service-id="${service.id}">
+                        <label class="flex items-start cursor-pointer">
+                            <input type="checkbox" value="${service.id}" class="mt-1 mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="font-semibold text-gray-900">${service.name}</p>
+                                        ${service.description ? `<p class="text-sm text-gray-600 mt-1">${service.description}</p>` : ''}
+                                    </div>
+                                    <div class="text-right ml-4">
+                                        <p class="font-semibold text-blue-600">$${parseFloat(service.price).toFixed(2)}</p>
+                                        <p class="text-xs text-gray-500">${service.duration_minutes} min</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                `);
+
+                card.find('input[type="checkbox"]').on('change', function() {
+                    toggleService(service.id, $(this).is(':checked'));
+                    card.toggleClass('selected', $(this).is(':checked'));
+                    updateSummary();
+                    if (selectedDate) {
+                        loadAvailableSlots();
+                    }
+                });
+
+                container.append(card);
+            });
+        }
+
+        // Toggle service selection
+        function toggleService(serviceId, isSelected) {
+            if (isSelected) {
+                if (!selectedServices.find(s => s.id === serviceId)) {
+                    selectedServices.push(services.find(s => s.id === serviceId));
+                }
+            } else {
+                selectedServices = selectedServices.filter(s => s.id !== serviceId);
+            }
+        }
+
+        // Load available time slots
+        function loadAvailableSlots() {
+            if (!selectedDate || selectedServices.length === 0) {
+                return;
+            }
+
+            const apiUrl = getApiUrl();
+            const serviceIds = selectedServices.map(s => s.id);
+
+            $('#time-slots-container').html('<div class="text-center py-2 text-blue-600"><i class="fas fa-spinner fa-spin mr-2"></i>Loading available slots...</div>');
+
+            $.ajax({
+                url: `${apiUrl}/public/available-slots`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    date: selectedDate,
+                    service_ids: serviceIds
+                }),
+                success: function(response) {
+                    if (response.success && response.data) {
+                        availableSlots = response.data.slots || [];
+                        renderTimeSlots();
+                    } else {
+                        $('#time-slots-container').html('<p class="text-sm text-red-600">No available slots for this date.</p>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading slots:', error);
+                    let errorMsg = 'Failed to load available time slots.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    $('#time-slots-container').html(`<p class="text-sm text-red-600">${errorMsg}</p>`);
+                }
+            });
+        }
+
+        // Render time slots
+        function renderTimeSlots() {
+            const container = $('#time-slots-container');
+            container.empty();
+
+            if (availableSlots.length === 0) {
+                container.html('<p class="text-sm text-red-600">No available time slots for the selected date and services.</p>');
+                return;
+            }
+
+            const slotsGrid = $('<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2"></div>');
+
+            availableSlots.forEach(slot => {
+                const slotDatetime = slot.datetime || slot.time;
+                let timeStr = '';
+                if (slotDatetime.includes('T')) {
+                    timeStr = slotDatetime.split('T')[1].substring(0, 5);
+                } else if (slotDatetime.includes(' ')) {
+                    timeStr = slotDatetime.split(' ')[1].substring(0, 5);
+                } else {
+                    timeStr = slotDatetime.substring(0, 5);
+                }
+                
+                const slotBtn = $(`
+                    <button type="button" class="time-slot px-3 py-2 text-sm border-2 border-gray-300 rounded-lg hover:border-gray-400 transition" data-time="${slotDatetime}">
+                        ${timeStr}
+                    </button>
+                `);
+
+                slotBtn.on('click', function() {
+                    $('.time-slot').removeClass('selected');
+                    $(this).addClass('selected');
+                    selectedTimeSlot = $(this).data('time');
+                });
+
+                slotsGrid.append(slotBtn);
+            });
+
+            container.append(slotsGrid);
+        }
+
+        // Update summary
+        function updateSummary() {
+            let total = 0;
+            let totalDuration = 0;
+
+            selectedServices.forEach(service => {
+                total += parseFloat(service.price);
+                totalDuration += parseInt(service.duration_minutes);
+            });
+
+            $('#total-price').text(`$${total.toFixed(2)}`);
+            $('#estimated-duration').text(`Duration: ${totalDuration} minutes`);
+        }
+
+        // Handle form submit
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            if (selectedServices.length === 0) {
+                showAlert('error', 'Please select at least one service.');
+                return;
+            }
+
+            if (!selectedDate) {
+                showAlert('error', 'Please select an appointment date.');
+                return;
+            }
+
+            if (!selectedTimeSlot) {
+                showAlert('error', 'Please select an available time slot.');
+                return;
+            }
+
+            const formData = {
+                customer_name: $('#customer_name').val(),
+                customer_email: $('#customer_email').val(),
+                customer_phone: $('#customer_phone').val() || null,
+                vehicle_make: $('#vehicle_make').val(),
+                vehicle_model: $('#vehicle_model').val(),
+                vehicle_year: parseInt($('#vehicle_year').val()),
+                vehicle_license_plate: $('#vehicle_license_plate').val(),
+                vehicle_vin: $('#vehicle_vin').val() || null,
+                vehicle_color: $('#vehicle_color').val() || null,
+                vehicle_mileage: $('#vehicle_mileage').val() ? parseInt($('#vehicle_mileage').val()) : null,
+                appointment_date: selectedTimeSlot,
+                service_ids: selectedServices.map(s => s.id),
+                notes: $('#notes').val() || null
+            };
+
+            submitAppointment(formData);
+        }
+
+        // Submit appointment
+        function submitAppointment(data) {
+            const apiUrl = getApiUrl();
+            const submitBtn = $('#submit-btn');
+
+            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Booking...');
+
+            $.ajax({
+                url: `${apiUrl}/public/appointments`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('success', `Appointment booked successfully! Job Order #: ${response.data.job_order_number || response.data.appointment_id}`);
+                        resetForm();
+                    } else {
+                        showAlert('error', response.message || 'Failed to book appointment.');
+                        submitBtn.prop('disabled', false).html('<i class="fas fa-calendar-check mr-2"></i>Book Appointment');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    let errorMsg = 'Failed to book appointment. Please try again.';
+                    if (xhr.responseJSON) {
+                        if (xhr.responseJSON.message) {
+                            errorMsg = xhr.responseJSON.message;
+                        }
+                        if (xhr.responseJSON.errors) {
+                            const errors = Object.values(xhr.responseJSON.errors).flat();
+                            errorMsg = errors.join('<br>');
+                        }
+                    }
+                    showAlert('error', errorMsg);
+                    submitBtn.prop('disabled', false).html('<i class="fas fa-calendar-check mr-2"></i>Book Appointment');
+                }
+            });
+        }
+
+        // Show alert message
+        function showAlert(type, message) {
+            const alertClass = type === 'success' 
+                ? 'bg-green-50 border-l-4 border-green-500 text-green-700' 
+                : 'bg-red-50 border-l-4 border-red-500 text-red-700';
+            
+            const icon = type === 'success' 
+                ? '<i class="fas fa-check-circle mr-3 text-xl"></i>' 
+                : '<i class="fas fa-exclamation-circle mr-3 text-xl"></i>';
+            
+            const alertHtml = `
+                <div class="${alertClass} p-4 rounded-lg shadow-md animate-fade-in-up" role="alert">
+                    <div class="flex items-center">
+                        ${icon}
+                        <div class="flex-1">
+                            <p class="font-semibold">${message}</p>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-auto ${type === 'success' ? 'text-green-700 hover:text-green-900' : 'text-red-700 hover:text-red-900'}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            $('#alert-container').stop(true, true).show().html(alertHtml);
+            
+            // Auto-hide after 5 seconds for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    $('#alert-container').fadeOut();
+                }, 5000);
+            }
+
+            // Scroll to top to show alert
+            $('html, body').animate({ scrollTop: 0 }, 300);
+        }
+
+        // Reset form
+        function resetForm() {
+            $('#appointment-form')[0].reset();
+            selectedServices = [];
+            selectedDate = null;
+            selectedTimeSlot = null;
+            availableSlots = [];
+            $('.service-card').removeClass('selected');
+            $('.service-card input[type="checkbox"]').prop('checked', false);
+            $('#time-slots-container').html('<p class="text-sm text-gray-500">Select a date and services first</p>');
+            updateSummary();
+        }
+    </script>
+</body>
+</html>

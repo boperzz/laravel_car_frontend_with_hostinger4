@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="">
+    <title>Car Maintenance Service - Dashboard</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet" />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    
+    <!-- Alpine.js for navigation dropdown -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <style>
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
+    <div class="min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex">
+                        <!-- Logo -->
+                        <div class="shrink-0 flex items-center">
+                            <a href="index.html" class="flex items-center group">
+                                <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-2 mr-3 group-hover:scale-110 transition-transform">
+                                    <i class="fas fa-car text-white text-xl"></i>
+                                </div>
+                                <span class="text-xl font-bold gradient-text">Car Maintenance</span>
+                            </a>
+                        </div>
+                        
+                        <!-- Navigation Links -->
+                        <div class="hidden space-x-2 sm:-my-px sm:ms-10 sm:flex">
+                            <a href="booking.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-indigo-500 text-sm font-medium leading-5 text-gray-900 focus:outline-none focus:border-indigo-700 transition">
+                                <i class="fas fa-calendar-plus mr-2"></i> Book Appointment
+                            </a>
+                            <a href="appointments.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition">
+                                <i class="fas fa-tachometer-alt mr-2"></i> Customer Portal
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Profile Dropdown / Login Button -->
+                    <div class="hidden sm:flex sm:items-center sm:ms-6">
+                        <div class="flex items-center space-x-3">
+                            <a href="login.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                                <i class="fas fa-sign-in-alt mr-2"></i>Login
+                            </a>
+                            <a href="register.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                                <i class="fas fa-user-plus mr-2"></i>Register
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Flash Messages / Alert Container -->
+        <div id="alert-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4"></div>
+
+        <!-- Page Heading -->
+        <header class="bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-200">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                </h2>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="py-6">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                                    <i class="fas fa-car text-2xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-600">Total Vehicles</p>
+                                    <p class="text-2xl font-semibold text-gray-900" id="stats-vehicles">0</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                                    <i class="fas fa-calendar-check text-2xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-600">Total Appointments</p>
+                                    <p class="text-2xl font-semibold text-gray-900" id="stats-appointments">0</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                                    <i class="fas fa-clock text-2xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-600">Pending</p>
+                                    <p class="text-2xl font-semibold text-gray-900" id="stats-pending">0</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                                    <i class="fas fa-calendar-alt text-2xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-600">Upcoming</p>
+                                    <p class="text-2xl font-semibold text-gray-900" id="stats-upcoming">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Recent Appointments -->
+                        <div class="bg-white rounded-lg shadow">
+                            <div class="px-6 py-4 border-b border-gray-200">
+                                <h3 class="text-lg font-semibold text-gray-800">
+                                    <i class="fas fa-calendar mr-2"></i>Recent Appointments
+                                </h3>
+                            </div>
+                            <div class="p-6" id="recent-appointments">
+                                <p class="text-gray-500 text-center py-4">Loading appointments...</p>
+                            </div>
+                        </div>
+
+                        <!-- Recent Vehicles -->
+                        <div class="bg-white rounded-lg shadow">
+                            <div class="px-6 py-4 border-b border-gray-200">
+                                <h3 class="text-lg font-semibold text-gray-800">
+                                    <i class="fas fa-car mr-2"></i>My Vehicles
+                                </h3>
+                            </div>
+                            <div class="p-6" id="recent-vehicles">
+                                <p class="text-gray-500 text-center py-4">Loading vehicles...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="mt-6 bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-bolt mr-2"></i>Quick Actions
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <a href="vehicles.html" class="flex items-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition">
+                                <i class="fas fa-plus-circle text-2xl text-blue-600 mr-3"></i>
+                                <div>
+                                    <p class="font-semibold text-gray-900">Add Vehicle</p>
+                                    <p class="text-sm text-gray-600">Register a new vehicle</p>
+                                </div>
+                            </a>
+                            <a href="booking.html" class="flex items-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition">
+                                <i class="fas fa-calendar-plus text-2xl text-green-600 mr-3"></i>
+                                <div>
+                                    <p class="font-semibold text-gray-900">Book Appointment</p>
+                                    <p class="text-sm text-gray-600">Schedule maintenance</p>
+                                </div>
+                            </a>
+                            <a href="appointments.html" class="flex items-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition">
+                                <i class="fas fa-list text-2xl text-purple-600 mr-3"></i>
+                                <div>
+                                    <p class="font-semibold text-gray-900">View Appointments</p>
+                                    <p class="text-sm text-gray-600">Manage bookings</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Configuration: API Base URL
+        function getApiUrl() {
+            return 'https://laravel-car.orbit-node.com/api';
+        }
+
+        function getAuthToken() {
+            return localStorage.getItem('authToken') || '';
+        }
+
+        function logout() {
+            $.ajax({
+                url: `${getApiUrl()}/auth/logout`,
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                },
+                complete: function() {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('currentUser');
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            if (!getAuthToken()) {
+                $('#stats-vehicles').text('—');
+                $('#stats-appointments').text('—');
+                $('#stats-pending').text('—');
+                $('#stats-upcoming').text('—');
+
+                $('#recent-appointments').html(`
+                    <p class="text-gray-600 text-center py-4">Please login to see your appointments.</p>
+                    <a href="login.html" class="block text-center text-blue-600 hover:text-blue-800 font-medium">
+                        Login <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                `);
+
+                $('#recent-vehicles').html(`
+                    <p class="text-gray-600 text-center py-4">Please login to see your vehicles.</p>
+                    <a href="login.html" class="block text-center text-blue-600 hover:text-blue-800 font-medium">
+                        Login <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                `);
+
+                return;
+            }
+
+            // Hide login/register buttons and add Profile/Logout
+            $('nav a[href="login.html"]').hide();
+            $('nav a[href="register.html"]').hide();
+            const navActions = $('nav div.flex.items-center.space-x-3').first();
+            if (navActions.length) {
+                navActions.append(`
+                    <a href="profile.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                        <i class="fas fa-user mr-2"></i>Profile
+                    </a>
+                    <a href="#" id="logout-link" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                `);
+                $('#logout-link').on('click', function(e) {
+                    e.preventDefault();
+                    logout();
+                });
+            }
+
+            loadDashboardData();
+        });
+
+        function loadDashboardData() {
+            const headers = {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`,
+            };
+
+            // Vehicles
+            $.ajax({
+                url: `${getApiUrl()}/me/vehicles`,
+                method: 'GET',
+                headers,
+                success: function(res) {
+                    const vehicles = res && res.data && res.data.vehicles ? res.data.vehicles : [];
+                    $('#stats-vehicles').text(vehicles.length);
+
+                    if (!vehicles.length) {
+                        $('#recent-vehicles').html('<p class="text-gray-500 text-center py-4">No vehicles yet.</p>');
+                        return;
+                    }
+
+                    const recent = vehicles.slice(0, 3);
+                    let html = '<div class="space-y-3">';
+                    recent.forEach(function(v) {
+                        html += `
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="font-semibold text-gray-900">${(v.year || '')} ${(v.make || '')} ${(v.model || '')}</p>
+                                    <p class="text-sm text-gray-600">${v.license_plate || ''}</p>
+                                </div>
+                                <a href="vehicles.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View</a>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    $('#recent-vehicles').html(html);
+                },
+                error: function(xhr) {
+                    if (xhr && xhr.status === 401) {
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    $('#stats-vehicles').text('—');
+                    $('#recent-vehicles').html('<p class="text-gray-500 text-center py-4">Failed to load vehicles.</p>');
+                }
+            });
+
+            // Appointments
+            $.ajax({
+                url: `${getApiUrl()}/me/appointments`,
+                method: 'GET',
+                headers,
+                success: function(res) {
+                    const appointments = res && res.data && res.data.appointments ? res.data.appointments : [];
+                    $('#stats-appointments').text(appointments.length);
+
+                    const pendingCount = appointments.filter(a => (a.status || '') === 'pending').length;
+                    $('#stats-pending').text(pendingCount);
+
+                    const now = new Date();
+                    const upcomingCount = appointments.filter(function(a) {
+                        if (!a.appointment_date) return false;
+                        const dt = new Date(a.appointment_date);
+                        return !isNaN(dt.getTime()) && dt > now;
+                    }).length;
+                    $('#stats-upcoming').text(upcomingCount);
+
+                    if (!appointments.length) {
+                        $('#recent-appointments').html('<p class="text-gray-500 text-center py-4">No appointments yet.</p>');
+                        return;
+                    }
+
+                    const recent = appointments.slice(0, 3);
+                    let html = '<div class="space-y-3">';
+                    recent.forEach(function(a) {
+                        const vehicle = a.vehicle ? `${a.vehicle.make || ''} ${a.vehicle.model || ''}`.trim() : '—';
+                        html += `
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="font-semibold text-gray-900">${a.appointment_date || '—'}</p>
+                                    <p class="text-sm text-gray-600">${vehicle} • ${a.status || '—'}</p>
+                                </div>
+                                <a href="appointments.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View</a>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    $('#recent-appointments').html(html);
+                },
+                error: function(xhr) {
+                    if (xhr && xhr.status === 401) {
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    $('#stats-appointments').text('—');
+                    $('#stats-pending').text('—');
+                    $('#stats-upcoming').text('—');
+                    $('#recent-appointments').html('<p class="text-gray-500 text-center py-4">Failed to load appointments.</p>');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
