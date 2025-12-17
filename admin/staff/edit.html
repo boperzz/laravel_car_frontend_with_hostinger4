@@ -27,6 +27,10 @@
                     <span class="text-xl font-bold">Car Maintenance</span>
                 </a>
                 <div class="flex items-center space-x-3">
+                    <div class="px-4 py-2 rounded-lg border-2 border-black bg-transparent font-semibold flex items-center gap-2">
+                        <i class="fas fa-user"></i>
+                        <span id="nav-user">User</span>
+                    </div>
                     <a href="index.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Back to Staff</a>
                     <button onclick="Logout.logout()" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Logout</button>
                 </div>
@@ -132,6 +136,9 @@
             if (!RoleGuard.requireRole(['admin'])) {
                 return;
             }
+
+            var currentUser = Auth.getUser();
+            $('#nav-user').text(currentUser ? (currentUser.name || currentUser.username || currentUser.email || currentUser.id) : 'User');
 
             var id = getQueryParam('id');
             if (!id) {
