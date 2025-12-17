@@ -61,6 +61,9 @@
 
     function dashboardPathForRole(role) {
         var r = normalizeRole(role);
+        if (!r) {
+            return 'login.html';
+        }
         if (r === 'admin') {
             return 'admin/dashboard.html';
         }
@@ -72,6 +75,9 @@
 
     function redirectToDashboard(role) {
         var path = dashboardPathForRole(role);
+        if (path === 'login.html') {
+            clearAuth();
+        }
         global.location.href = Api.toRelativeRoot(path);
     }
 
