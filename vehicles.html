@@ -211,8 +211,9 @@
     <script>
         // Configuration: API Base URL
         function getApiUrl() {
-            return 'https://laravel-test-system.orbit-node.com/api';
+            return 'https://laravel-car.orbit-node.com/api';
         }
+
         function getAuthToken() {
             return localStorage.getItem('authToken') || '';
         }
@@ -272,8 +273,16 @@
             let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
             
             vehicles.forEach(vehicle => {
+                const pictureUrl = getVehiclePictureUrl(vehicle);
                 html += `
                     <div class="bg-white rounded-lg shadow hover:shadow-lg transition">
+                        <div class="h-40 w-full bg-gray-100 rounded-t-lg overflow-hidden flex items-center justify-center">
+                            ${pictureUrl ? `
+                                <img src="${pictureUrl}" alt="${vehicle.make} ${vehicle.model}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\"fas fa-car text-5xl text-gray-300\"></i>';" />
+                            ` : `
+                                <i class="fas fa-car text-5xl text-gray-300"></i>
+                            `}
+                        </div>
                         <div class="p-6">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
@@ -317,6 +326,19 @@
             
             html += '</div>';
             $('#vehicles-container').html(html);
+        }
+
+        function getVehiclePictureUrl(vehicle) {
+            const raw = vehicle && vehicle.picture ? String(vehicle.picture) : '';
+            if (!raw) return '';
+
+            if (raw.startsWith('http://') || raw.startsWith('https://')) {
+                return raw;
+            }
+
+            const siteRoot = getApiUrl().replace(/\/api\/?$/, '');
+            const cleaned = raw.replace(/^\//, '').replace(/^storage\//, '');
+            return `${siteRoot}/storage/${cleaned}`;
         }
 
         function showAddVehicleModal() {
@@ -408,5 +430,4 @@
     </script>
 </body>
 </html>
-
 
