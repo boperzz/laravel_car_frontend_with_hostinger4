@@ -1,5 +1,5 @@
 (function (global) {
-    var DEFAULT_API_BASE_URL = 'https://laravel-car.orbit-node.com/api';
+    var DEFAULT_API_BASE_URL = 'https://laravel-test-system.orbit-node.com/api';
 
     function getBaseUrl() {
         var explicit = global.localStorage ? global.localStorage.getItem('apiBaseUrl') : null;
