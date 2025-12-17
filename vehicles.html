@@ -218,12 +218,54 @@
             return localStorage.getItem('authToken') || '';
         }
 
+        function setupNavAuth() {
+            if (!getAuthToken()) return;
+
+            $('nav a[href="login.html"]').hide();
+            $('nav a[href="register.html"]').hide();
+
+            const navActions = $('nav div.flex.items-center.space-x-3').first();
+            if (navActions.length && navActions.find('#profile-link').length === 0) {
+                navActions.append(`
+                    <a href="profile.html" id="profile-link" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                        <i class="fas fa-user mr-2"></i>Profile
+                    </a>
+                    <a href="#" id="logout-link" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                `);
+
+                $('#logout-link').on('click', function(e) {
+                    e.preventDefault();
+                    logout();
+                });
+            }
+        }
+
+        function logout() {
+            $.ajax({
+                url: `${getApiUrl()}/auth/logout`,
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                },
+                complete: function() {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('currentUser');
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+
         // Load vehicles on page load
         $(document).ready(function() {
             if (!getAuthToken()) {
                 window.location.href = 'login.html';
                 return;
             }
+
+            setupNavAuth();
 
             $('#vehicle-form').on('submit', handleAddVehicle);
             loadVehicles();
