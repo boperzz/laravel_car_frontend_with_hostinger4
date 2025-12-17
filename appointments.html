@@ -75,17 +75,23 @@
                         
                         <!-- Navigation Links -->
                         <div class="hidden space-x-2 sm:-my-px sm:ms-10 sm:flex">
-                            <a href="booking.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition">
-                                <i class="fas fa-calendar-plus mr-2"></i> Book Appointment
+                            <a href="index.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition">
+                                <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
                             </a>
-                            <a href="index.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-indigo-500 text-sm font-medium leading-5 text-gray-900 focus:outline-none focus:border-indigo-700 transition">
-                                <i class="fas fa-tachometer-alt mr-2"></i> Customer Portal
+                            <a href="vehicles.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition">
+                                <i class="fas fa-car mr-2"></i> My Vehicles
+                            </a>
+                            <a href="appointments.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-indigo-500 text-sm font-medium leading-5 text-gray-900 focus:outline-none focus:border-indigo-700 transition">
+                                <i class="fas fa-calendar mr-2"></i> Appointments
                             </a>
                         </div>
                     </div>
 
                     <div class="hidden sm:flex sm:items-center sm:ms-6">
                         <div class="flex items-center space-x-3">
+                            <a href="booking.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                                <i class="fas fa-calendar-plus mr-2"></i>Book Appointment
+                            </a>
                             <a href="login.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
                                 <i class="fas fa-sign-in-alt mr-2"></i>Login
                             </a>
@@ -108,8 +114,8 @@
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                         <i class="fas fa-calendar mr-2"></i>My Appointments
                     </h2>
-                    <a href="booking.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
-                        <i class="fas fa-arrow-right mr-2"></i>Open Portal
+                    <a href="index.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
                     </a>
                 </div>
             </div>
@@ -130,9 +136,9 @@
                     <div id="appointments-empty" class="hidden bg-white rounded-lg shadow p-12 text-center">
                         <i class="fas fa-calendar-times text-6xl text-gray-300 mb-4"></i>
                         <h3 class="text-xl font-semibold text-gray-700 mb-2">No Appointments Yet</h3>
-                        <p class="text-gray-500 mb-6">Appointments are available in the secure Customer Portal.</p>
+                        <p class="text-gray-500 mb-6">Book your first appointment to get started.</p>
                         <a href="booking.html" class="inline-block border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-6 py-3 rounded-lg transition font-semibold">
-                            <i class="fas fa-arrow-right mr-2"></i>Open Customer Portal
+                            <i class="fas fa-calendar-plus mr-2"></i>Book Appointment
                         </a>
                     </div>
                 </div>
@@ -143,7 +149,7 @@
     <script>
         // Configuration: API Base URL
         function getApiUrl() {
-            return 'https://laravel-test-system.orbit-node.com/api';
+            return 'https://laravel-car.orbit-node.com/api';
         }
 
         function getAuthToken() {
@@ -271,5 +277,4 @@
     </script>
 </body>
 </html>
-
 
