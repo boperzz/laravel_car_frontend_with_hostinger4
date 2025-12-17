@@ -29,6 +29,9 @@
     
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
     
     <style>
         @keyframes fadeInUp {
@@ -265,7 +268,7 @@
     <script>
         // Configuration: API Base URL
         function getApiUrl() {
-            return 'https://laravel-test-system.orbit-node.com/api';
+            return 'https://laravel-car.orbit-node.com/api';
         }
 
         $(document).ready(function() {
@@ -336,35 +339,18 @@
             const form = document.getElementById('register-form');
             const formData = new FormData(form);
 
-            $.ajax({
-                url: `${getApiUrl()}/auth/register`,
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                headers: {
-                    'Accept': 'application/json',
-                },
-                success: function(res) {
-                    const token = res && res.data && res.data.token;
+            Auth.register(formData)
+                .done(function(res) {
                     const user = res && res.data && res.data.user;
-
-                    if (!token || !user) {
-                        showAlert('error', 'Registration failed. Please try again.');
-                        return;
-                    }
-
-                    localStorage.setItem('authToken', token);
-                    localStorage.setItem('currentUser', JSON.stringify(user));
 
                     showAlert('success', 'Account created successfully.');
                     setTimeout(function() {
-                        window.location.href = 'index.html';
+                        Auth.redirectToDashboard(user && user.role ? user.role : null);
                     }, 300);
-                },
-                error: function(xhr) {
+                })
+                .fail(function(xhr) {
                     const json = xhr && xhr.responseJSON;
-                    if (xhr.status === 422) {
+                    if (xhr && xhr.status === 422) {
                         if (json && json.errors) {
                             setFieldErrors(json.errors);
                         }
@@ -373,11 +359,9 @@
                     }
 
                     showAlert('error', (json && json.message) ? json.message : 'Registration failed. Please try again.');
-                }
-            });
+                });
         }
     </script>
 </body>
 </html>
-
 
