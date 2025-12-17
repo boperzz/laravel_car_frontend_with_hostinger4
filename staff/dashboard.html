@@ -35,19 +35,90 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div class="bg-white rounded-lg shadow p-8">
-            <h1 class="text-2xl font-bold mb-2">Staff Dashboard</h1>
-            <p class="text-slate-600 mb-6">You have operational access only.</p>
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold mb-1"><i class="fas fa-tachometer-alt mr-2"></i>Staff Dashboard</h1>
+                <p class="text-slate-600">Overview of your assigned work.</p>
+            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="p-4 border rounded-lg">
-                    <div class="font-semibold mb-1">Assigned Appointments API</div>
-                    <div class="text-sm text-slate-600">GET</div>
-                    <div class="text-sm mt-2"><code class="text-slate-800">/api/staff/appointments</code></div>
+            <div class="flex items-center gap-3">
+                <a href="appointments/index.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                    <i class="fas fa-calendar-check mr-2"></i>My Appointments
+                </a>
+            </div>
+        </div>
+
+        <div id="staff-loading" class="text-center py-6 text-blue-600">
+            <i class="fas fa-spinner fa-spin mr-2"></i>Loading dashboard...
+        </div>
+
+        <div id="staff-error" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-md mb-6" role="alert"></div>
+
+        <div id="staff-content" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600"><i class="fas fa-calendar-day text-2xl"></i></div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Today's Appointments</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="stat-today">—</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="p-4 border rounded-lg">
-                    <div class="font-semibold mb-1">Role</div>
-                    <div class="text-sm text-slate-600" id="role-text"></div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-yellow-100 text-yellow-600"><i class="fas fa-clock text-2xl"></i></div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Pending</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="stat-pending">—</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-600"><i class="fas fa-calendar-alt text-2xl"></i></div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Upcoming</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="stat-upcoming">—</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600"><i class="fas fa-check-circle text-2xl"></i></div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Completed Today</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="stat-completed">—</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-800"><i class="fas fa-calendar-day mr-2"></i>Today's Appointments</h3>
+                    </div>
+                    <div class="p-6" id="today-appointments">
+                        <p class="text-gray-500 text-center py-4">—</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-800"><i class="fas fa-calendar-check mr-2"></i>Upcoming Appointments</h3>
+                    </div>
+                    <div class="p-6" id="upcoming-appointments">
+                        <p class="text-gray-500 text-center py-4">—</p>
+                        <div class="mt-4">
+                            <a href="appointments/index.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                View All Appointments <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -59,8 +130,132 @@
                 return;
             }
 
-            $('#role-text').text(Auth.getRole() || '-');
+            loadStaffDashboard();
         });
+
+        function showStaffError(message) {
+            $('#staff-loading').addClass('hidden');
+            $('#staff-content').addClass('hidden');
+            $('#staff-error').removeClass('hidden').text(message || 'Failed to load staff dashboard.');
+        }
+
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatTime(iso) {
+            if (!iso) return '';
+            try {
+                return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } catch (e) {
+                return iso;
+            }
+        }
+
+        function formatDateTime(iso) {
+            if (!iso) return '';
+            try {
+                return new Date(iso).toLocaleString();
+            } catch (e) {
+                return iso;
+            }
+        }
+
+        function statusBadge(status) {
+            var s = (status || '').toLowerCase();
+            var cls = 'bg-gray-100 text-gray-800';
+            if (s === 'pending') cls = 'bg-yellow-100 text-yellow-800';
+            else if (s === 'confirmed') cls = 'bg-blue-100 text-blue-800';
+            else if (s === 'in_progress') cls = 'bg-purple-100 text-purple-800';
+            else if (s === 'completed') cls = 'bg-green-100 text-green-800';
+            else if (s === 'cancelled') cls = 'bg-red-100 text-red-800';
+            var label = s ? (s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')) : '-';
+            return '<span class="px-2 py-1 text-xs font-semibold rounded-full ' + cls + '">' + escapeHtml(label) + '</span>';
+        }
+
+        function renderAppointments(containerSelector, items, opts) {
+            var options = opts || {};
+            var borderColor = options.borderColor || 'blue';
+            if (!items || !items.length) {
+                $(containerSelector).html('<p class="text-gray-500 text-center py-4">No appointments.</p>');
+                return;
+            }
+
+            var html = '<div class="space-y-4">';
+            items.forEach(function (a) {
+                var vehicleName = a && a.vehicle ? (a.vehicle.full_name || a.vehicle.license_plate || '') : '';
+                var customerName = a && a.user ? (a.user.name || a.user.email || '') : '';
+                var serviceNames = (a.services || []).map(function (s) { return s.name; }).filter(Boolean).join(', ');
+                var when = options.timeOnly ? formatTime(a.appointment_date) : formatDateTime(a.appointment_date);
+
+                html += '<div class="border-l-4 border-' + borderColor + '-500 pl-4 py-2 hover:bg-gray-50 rounded">' +
+                    '<div class="flex justify-between items-start">' +
+                    '<div class="flex-1">' +
+                    '<a href="appointments/show.html?id=' + encodeURIComponent(a.id) + '" class="block">' +
+                    '<p class="font-semibold text-gray-900">' + escapeHtml((when ? (when + ' - ') : '') + (vehicleName || '-')) + '</p>' +
+                    (customerName ? ('<p class="text-sm text-gray-600"><i class="fas fa-user mr-1"></i>' + escapeHtml(customerName) + '</p>') : '') +
+                    (serviceNames ? ('<p class="text-sm text-gray-600"><i class="fas fa-wrench mr-1"></i>' + escapeHtml(serviceNames) + '</p>') : '') +
+                    '</a>' +
+                    '</div>' +
+                    '<span class="ml-4">' + statusBadge(a.status) + '</span>' +
+                    '</div>' +
+                    '</div>';
+            });
+            html += '</div>';
+            $(containerSelector).html(html);
+        }
+
+        function loadStaffDashboard() {
+            $('#staff-loading').removeClass('hidden');
+            $('#staff-error').addClass('hidden').text('');
+
+            Api.request({
+                url: Api.getBaseUrl() + '/staff/dashboard',
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }).done(function (res) {
+                var data = res && res.data ? res.data : null;
+                if (!data || !data.stats) {
+                    showStaffError('Dashboard data is missing.');
+                    return;
+                }
+
+                var stats = data.stats;
+                $('#stat-today').text(stats.today_appointments != null ? stats.today_appointments : '—');
+                $('#stat-pending').text(stats.pending_appointments != null ? stats.pending_appointments : '—');
+                $('#stat-upcoming').text(stats.upcoming_appointments != null ? stats.upcoming_appointments : '—');
+                $('#stat-completed').text(stats.completed_today != null ? stats.completed_today : '—');
+
+                renderAppointments('#today-appointments', data.today_appointments || [], { borderColor: 'blue', timeOnly: true });
+                renderAppointments('#upcoming-appointments', data.upcoming_appointments || [], { borderColor: 'purple', timeOnly: false });
+
+                $('#staff-loading').addClass('hidden');
+                $('#staff-content').removeClass('hidden');
+            }).fail(function (xhr) {
+                if (xhr && xhr.status === 403) {
+                    showStaffError('Forbidden (403). Your account is not allowed to view staff dashboard.');
+                    return;
+                }
+                if (xhr && xhr.status === 401) {
+                    showStaffError('Session expired. Redirecting to login...');
+                    setTimeout(function () {
+                        Auth.clearAuth();
+                        window.location.href = Api.toRelativeRoot('login.html');
+                    }, 700);
+                    return;
+                }
+
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                showStaffError((json && json.message) ? json.message : 'Failed to load staff dashboard.');
+            });
+        }
     </script>
 </body>
 </html>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Details</title>
+
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/role-guard.js"></script>
+    <script src="../../js/logout.js"></script>
+</head>
+<body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <a href="../../index.html" class="flex items-center">
+                    <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-2 mr-3">
+                        <i class="fas fa-car text-white text-xl"></i>
+                    </div>
+                    <span class="text-xl font-bold">Car Maintenance</span>
+                </a>
+                <div class="flex items-center space-x-3">
+                    <a href="index.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Appointments
+                    </a>
+                    <button onclick="Logout.logout()" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold"><i class="fas fa-calendar-check mr-2"></i>Appointment Details</h1>
+        </div>
+
+        <div id="page-loading" class="text-center py-6 text-blue-600">
+            <i class="fas fa-spinner fa-spin mr-2"></i>Loading appointment...
+        </div>
+
+        <div id="page-error" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-md mb-6" role="alert"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 hidden" id="page-content">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4"><i class="fas fa-info-circle mr-2"></i>Appointment Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="appt-info"></div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4"><i class="fas fa-car mr-2"></i>Vehicle Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="vehicle-info"></div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4"><i class="fas fa-wrench mr-2"></i>Services</h3>
+                    <div class="space-y-3" id="services"></div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6 hidden" id="notes-card">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4"><i class="fas fa-sticky-note mr-2"></i>Notes</h3>
+                    <div id="notes"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="bg-white rounded-lg shadow p-6 mb-6" id="status-card">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4"><i class="fas fa-edit mr-2"></i>Update Status</h3>
+
+                    <div id="status-success" class="hidden mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800"></div>
+                    <div id="status-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700"></div>
+
+                    <form id="status-form">
+                        <div class="mb-4">
+                            <select id="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="confirmed">Confirmed</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                            <p class="text-sm text-gray-500 mt-2">You can only update status to: Confirmed, In Progress, or Completed</p>
+                        </div>
+                        <button type="submit" class="w-full border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                            <i class="fas fa-save mr-2"></i>Update Status
+                        </button>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6" id="notes-form-card">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4"><i class="fas fa-sticky-note mr-2"></i>Add Notes</h3>
+
+                    <div id="notes-success" class="hidden mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800"></div>
+                    <div id="notes-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700"></div>
+
+                    <form id="notes-form">
+                        <div class="mb-4">
+                            <label for="staff_notes" class="block text-sm font-medium text-gray-700 mb-2">Staff Notes</label>
+                            <textarea id="staff_notes" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Add notes, findings, or recommendations..."></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label for="service_results" class="block text-sm font-medium text-gray-700 mb-2">Service Results</label>
+                            <textarea id="service_results" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Describe completed work and results..."></textarea>
+                        </div>
+                        <button type="submit" class="w-full border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                            <i class="fas fa-save mr-2"></i>Save Notes
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        var APPT_ID = null;
+
+        $(function () {
+            if (!RoleGuard.requireRole(['staff'])) {
+                return;
+            }
+
+            APPT_ID = getQueryParam('id');
+            if (!APPT_ID) {
+                showError('Missing appointment id.');
+                return;
+            }
+
+            $('#status-form').on('submit', function (e) {
+                e.preventDefault();
+                updateStatus();
+            });
+
+            $('#notes-form').on('submit', function (e) {
+                e.preventDefault();
+                updateNotes();
+            });
+
+            loadAppointment();
+        });
+
+        function getQueryParam(name) {
+            var params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatDateTime(iso) {
+            if (!iso) return '-';
+            try {
+                return new Date(iso).toLocaleString();
+            } catch (e) {
+                return iso;
+            }
+        }
+
+        function showError(message) {
+            $('#page-loading').addClass('hidden');
+            $('#page-content').addClass('hidden');
+            $('#page-error').removeClass('hidden').text(message || 'Failed to load appointment.');
+        }
+
+        function statusBadge(status) {
+            var s = (status || '').toLowerCase();
+            var cls = 'bg-gray-100 text-gray-800';
+            if (s === 'pending') cls = 'bg-yellow-100 text-yellow-800';
+            else if (s === 'confirmed') cls = 'bg-blue-100 text-blue-800';
+            else if (s === 'in_progress') cls = 'bg-purple-100 text-purple-800';
+            else if (s === 'completed') cls = 'bg-green-100 text-green-800';
+            else if (s === 'cancelled') cls = 'bg-red-100 text-red-800';
+
+            var label = s ? (s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')) : '-';
+            return '<span class="inline-block px-3 py-1 text-sm font-semibold rounded-full ' + cls + '">' + escapeHtml(label) + '</span>';
+        }
+
+        function loadAppointment() {
+            $('#page-loading').removeClass('hidden');
+            $('#page-error').addClass('hidden').text('');
+
+            Api.request({
+                url: Api.getBaseUrl() + '/staff/appointments/' + encodeURIComponent(APPT_ID),
+                method: 'GET'
+            }).done(function (res) {
+                var a = res && res.data && res.data.appointment ? res.data.appointment : null;
+                if (!a) {
+                    showError('Appointment not found.');
+                    return;
+                }
+
+                var customerName = a.user ? (a.user.name || a.user.email) : '-';
+                var customerEmail = a.user ? (a.user.email || '') : '';
+                var vehicleName = a.vehicle ? (a.vehicle.full_name || a.vehicle.license_plate) : '-';
+                var total = (a.total_price != null) ? ('$' + Number(a.total_price).toFixed(2)) : '-';
+
+                $('#appt-info').html(
+                    '<div>' +
+                        '<label class="block text-sm font-medium text-gray-600 mb-1">Date &amp; Time</label>' +
+                        '<p class="text-lg font-semibold text-gray-900">' + escapeHtml(formatDateTime(a.appointment_date)) + '</p>' +
+                        '<p class="text-sm text-gray-600">' + escapeHtml(a.end_time ? ('Ends: ' + formatDateTime(a.end_time)) : '') + '</p>' +
+                    '</div>' +
+                    '<div>' +
+                        '<label class="block text-sm font-medium text-gray-600 mb-1">Status</label>' +
+                        statusBadge(a.status) +
+                    '</div>' +
+                    '<div>' +
+                        '<label class="block text-sm font-medium text-gray-600 mb-1">Customer</label>' +
+                        '<p class="text-lg font-semibold text-gray-900">' + escapeHtml(customerName) + '</p>' +
+                        '<p class="text-sm text-gray-600">' + escapeHtml(customerEmail) + '</p>' +
+                    '</div>' +
+                    '<div>' +
+                        '<label class="block text-sm font-medium text-gray-600 mb-1">Total Price</label>' +
+                        '<p class="text-2xl font-bold text-blue-600">' + escapeHtml(total) + '</p>' +
+                    '</div>'
+                );
+
+                var vinHtml = a.vehicle && a.vehicle.vin ? ('<div><label class="block text-sm font-medium text-gray-600 mb-1">VIN</label><p class="text-lg font-semibold text-gray-900">' + escapeHtml(a.vehicle.vin) + '</p></div>') : '';
+                var mileageHtml = (a.vehicle && a.vehicle.mileage != null) ? ('<div><label class="block text-sm font-medium text-gray-600 mb-1">Mileage</label><p class="text-lg font-semibold text-gray-900">' + escapeHtml(a.vehicle.mileage) + '</p></div>') : '';
+
+                $('#vehicle-info').html(
+                    '<div><label class="block text-sm font-medium text-gray-600 mb-1">Vehicle</label><p class="text-lg font-semibold text-gray-900">' + escapeHtml(vehicleName) + '</p></div>' +
+                    (a.vehicle ? ('<div><label class="block text-sm font-medium text-gray-600 mb-1">License Plate</label><p class="text-lg font-semibold text-gray-900">' + escapeHtml(a.vehicle.license_plate || '-') + '</p></div>') : '') +
+                    vinHtml + mileageHtml
+                );
+
+                var services = a.services || [];
+                if (!services.length) {
+                    $('#services').html('<p class="text-gray-500">No services.</p>');
+                } else {
+                    var sHtml = '';
+                    services.forEach(function (s) {
+                        var price = (s.price != null) ? ('$' + Number(s.price).toFixed(2)) : '-';
+                        sHtml += '<div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">' +
+                            '<div>' +
+                                '<p class="font-semibold text-gray-900">' + escapeHtml(s.name || '-') + '</p>' +
+                                '<p class="text-sm text-gray-600">' + escapeHtml((s.duration_minutes != null ? s.duration_minutes : '-') + ' minutes') + '</p>' +
+                            '</div>' +
+                            '<p class="font-semibold text-blue-600">' + escapeHtml(price) + '</p>' +
+                        '</div>';
+                    });
+                    $('#services').html(sHtml);
+                }
+
+                var hasAnyNotes = !!(a.notes || a.staff_notes || a.service_results);
+                if (hasAnyNotes) {
+                    var notesHtml = '';
+                    if (a.notes) {
+                        notesHtml += '<div class="mb-4"><label class="block text-sm font-medium text-gray-600 mb-1">Customer Notes</label><p class="text-gray-700 bg-gray-50 p-3 rounded-lg">' + escapeHtml(a.notes) + '</p></div>';
+                    }
+                    if (a.staff_notes) {
+                        notesHtml += '<div class="mb-4"><label class="block text-sm font-medium text-gray-600 mb-1">Your Notes</label><p class="text-gray-700 bg-blue-50 p-3 rounded-lg">' + escapeHtml(a.staff_notes) + '</p></div>';
+                    }
+                    if (a.service_results) {
+                        notesHtml += '<div><label class="block text-sm font-medium text-gray-600 mb-1">Service Results</label><p class="text-gray-700 bg-green-50 p-3 rounded-lg">' + escapeHtml(a.service_results) + '</p></div>';
+                    }
+                    $('#notes').html(notesHtml);
+                    $('#notes-card').removeClass('hidden');
+                } else {
+                    $('#notes-card').addClass('hidden');
+                }
+
+                $('#status').val(a.status || 'confirmed');
+                $('#staff_notes').val(a.staff_notes || '');
+                $('#service_results').val(a.service_results || '');
+
+                $('#page-loading').addClass('hidden');
+                $('#page-content').removeClass('hidden');
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                showError((json && json.message) ? json.message : 'Failed to load appointment.');
+            });
+        }
+
+        function updateStatus() {
+            $('#status-success').addClass('hidden').text('');
+            $('#status-error').addClass('hidden').text('');
+
+            Api.request({
+                url: Api.getBaseUrl() + '/staff/appointments/' + encodeURIComponent(APPT_ID) + '/status',
+                method: 'PATCH',
+                data: { status: $('#status').val() },
+                headers: { 'Accept': 'application/json' }
+            }).done(function () {
+                $('#status-success').removeClass('hidden').text('Appointment status updated successfully!');
+                loadAppointment();
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                $('#status-error').removeClass('hidden').text((json && json.message) ? json.message : 'Failed to update status.');
+            });
+        }
+
+        function updateNotes() {
+            $('#notes-success').addClass('hidden').text('');
+            $('#notes-error').addClass('hidden').text('');
+
+            Api.request({
+                url: Api.getBaseUrl() + '/staff/appointments/' + encodeURIComponent(APPT_ID) + '/notes',
+                method: 'PATCH',
+                data: {
+                    staff_notes: $('#staff_notes').val(),
+                    service_results: $('#service_results').val()
+                },
+                headers: { 'Accept': 'application/json' }
+            }).done(function () {
+                $('#notes-success').removeClass('hidden').text('Notes updated successfully!');
+                loadAppointment();
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                if (xhr && xhr.status === 422 && json && json.errors) {
+                    $('#notes-error').removeClass('hidden').text('Please fix the highlighted fields.');
+                    return;
+                }
+                $('#notes-error').removeClass('hidden').text((json && json.message) ? json.message : 'Failed to update notes.');
+            });
+        }
+    </script>
+</body>
+</html>
