@@ -204,6 +204,11 @@
                             <input type="number" id="vehicle_mileage" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                         </div>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Vehicle Image</label>
+                        <input type="file" id="vehicle_picture" accept="image/*" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
+                        <p class="text-xs text-gray-500 mt-1">Accepted: JPG, PNG, GIF, WEBP (max 5MB)</p>
+                    </div>
                     <div class="flex justify-end space-x-3 pt-4">
                         <button type="button" onclick="closeAddVehicleModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
                         <button type="submit" class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800">Add Vehicle</button>
@@ -283,6 +288,11 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Mileage</label>
                             <input type="number" id="edit_vehicle_mileage" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                         </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Replace Vehicle Image</label>
+                        <input type="file" id="edit_vehicle_picture" accept="image/*" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
+                        <p class="text-xs text-gray-500 mt-1">Leave empty to keep current image (max 5MB)</p>
                     </div>
                     <div class="flex justify-end space-x-3 pt-4">
                         <button type="button" onclick="closeEditVehicleModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
@@ -520,24 +530,55 @@
             $('#vehicle-form')[0].reset();
         }
 
+        function validatePictureFile(file) {
+            if (!file) return { ok: true };
+            const maxBytes = 5 * 1024 * 1024;
+            if (file.size > maxBytes) return { ok: false, error: 'Image must be 5MB or less.' };
+            if (!file.type || !file.type.startsWith('image/')) return { ok: false, error: 'Selected file must be an image.' };
+            return { ok: true };
+        }
+
         function handleAddVehicle(e) {
             e.preventDefault();
 
-            const payload = {
-                make: $('#vehicle_make').val(),
-                model: $('#vehicle_model').val(),
-                year: parseInt($('#vehicle_year').val()),
-                license_plate: $('#vehicle_license_plate').val(),
-                vin: $('#vehicle_vin').val() || null,
-                color: $('#vehicle_color').val() || null,
-                mileage: $('#vehicle_mileage').val() ? parseInt($('#vehicle_mileage').val()) : null,
-            };
+            const make = String($('#vehicle_make').val() || '').trim();
+            const model = String($('#vehicle_model').val() || '').trim();
+            const licensePlate = String($('#vehicle_license_plate').val() || '').trim();
+            const yearRaw = $('#vehicle_year').val();
+            const year = yearRaw !== '' ? parseInt(yearRaw) : NaN;
+            const vin = String($('#vehicle_vin').val() || '').trim();
+            const color = String($('#vehicle_color').val() || '').trim();
+            const mileageRaw = $('#vehicle_mileage').val();
+            const mileage = mileageRaw !== '' ? parseInt(mileageRaw) : null;
+            const pictureFile = $('#vehicle_picture')[0] && $('#vehicle_picture')[0].files ? $('#vehicle_picture')[0].files[0] : null;
+
+            const maxYear = new Date().getFullYear() + 1;
+            if (!make) { showAlert('error', 'Make is required.'); return; }
+            if (!model) { showAlert('error', 'Model is required.'); return; }
+            if (!licensePlate) { showAlert('error', 'License plate is required.'); return; }
+            if (!Number.isInteger(year) || year < 1900 || year > maxYear) { showAlert('error', 'Year must be a valid number.'); return; }
+            if (mileage != null && (!Number.isInteger(mileage) || mileage < 0)) { showAlert('error', 'Mileage must be a valid number.'); return; }
+            if (vin && vin.length > 17) { showAlert('error', 'VIN must be 17 characters or less.'); return; }
+
+            const pictureCheck = validatePictureFile(pictureFile);
+            if (!pictureCheck.ok) { showAlert('error', pictureCheck.error); return; }
+
+            const formData = new FormData();
+            formData.append('make', make);
+            formData.append('model', model);
+            formData.append('year', String(year));
+            formData.append('license_plate', licensePlate);
+            if (vin) formData.append('vin', vin);
+            if (color) formData.append('color', color);
+            if (mileage != null) formData.append('mileage', String(mileage));
+            if (pictureFile) formData.append('picture', pictureFile);
 
             $.ajax({
                 url: `${getApiUrl()}/me/vehicles`,
                 method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(payload),
+                data: formData,
+                processData: false,
+                contentType: false,
                 headers: {
                     'Accept': 'application/json',
                     'Authorization': `Bearer ${getAuthToken()}`,
@@ -621,6 +662,7 @@
             $('#edit_vehicle_vin').val(vehicle.vin || '');
             $('#edit_vehicle_color').val(vehicle.color || '');
             $('#edit_vehicle_mileage').val(vehicle.mileage != null ? vehicle.mileage : '');
+            $('#edit_vehicle_picture').val('');
 
             $('#vehicle-edit-modal').removeClass('hidden');
         }
@@ -692,11 +734,30 @@
                 return;
             }
 
+            const pictureFile = $('#edit_vehicle_picture')[0] && $('#edit_vehicle_picture')[0].files ? $('#edit_vehicle_picture')[0].files[0] : null;
+            const pictureCheck = validatePictureFile(pictureFile);
+            if (!pictureCheck.ok) {
+                showAlert('error', pictureCheck.error);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('_method', 'PUT');
+            Object.keys(payload).forEach((k) => {
+                const v = payload[k];
+                if (v === undefined || v === null) return;
+                formData.append(k, String(v));
+            });
+            if (pictureFile) {
+                formData.append('picture', pictureFile);
+            }
+
             $.ajax({
                 url: `${getApiUrl()}/me/vehicles/${activeVehicleId}`,
-                method: 'PUT',
-                contentType: 'application/json',
-                data: JSON.stringify(payload),
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
                 headers: {
                     'Accept': 'application/json',
                     'Authorization': `Bearer ${getAuthToken()}`,
