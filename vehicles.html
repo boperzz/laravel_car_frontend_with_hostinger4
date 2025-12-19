@@ -432,7 +432,7 @@
                     <div class="bg-white rounded-lg shadow hover:shadow-lg transition">
                         <div class="h-40 w-full bg-gray-100 rounded-t-lg overflow-hidden flex items-center justify-center">
                             ${pictureUrl ? `
-                                <img src="${pictureUrl}" alt="${vehicle.make} ${vehicle.model}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\"fas fa-car text-5xl text-gray-300\"></i>';" />
+                                <img src="${pictureUrl}" alt="${vehicle.make} ${vehicle.model}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fas fa-car text-5xl text-gray-300\\'></i>';" />
                             ` : `
                                 <i class="fas fa-car text-5xl text-gray-300"></i>
                             `}
@@ -620,7 +620,7 @@
                 <div class="flex items-center space-x-4 mb-4">
                     <div class="h-20 w-20 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
                         ${pictureUrl ? `
-                            <img src="${pictureUrl}" alt="${safe(vehicle.make)} ${safe(vehicle.model)}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\"fas fa-car text-3xl text-gray-300\"></i>';" />
+                            <img src="${pictureUrl}" alt="${safe(vehicle.make)} ${safe(vehicle.model)}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fas fa-car text-3xl text-gray-300\\'></i>';" />
                         ` : `
                             <i class="fas fa-car text-3xl text-gray-300"></i>
                         `}
