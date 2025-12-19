@@ -173,6 +173,15 @@
                                     <label class="block text-sm font-medium text-gray-700 mb-2">
                                         Vehicle Information
                                     </label>
+                                    <div id="vehicle-selector-wrapper" class="hidden mb-4">
+                                        <label for="vehicle_selector" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Select Registered Vehicle
+                                        </label>
+                                        <select id="vehicle_selector" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Manual entry</option>
+                                        </select>
+                                        <p id="vehicle-selector-hint" class="mt-2 text-sm text-gray-500"></p>
+                                    </div>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                         <div>
                                             <label for="vehicle_make" class="block text-sm font-medium text-gray-700 mb-2">
@@ -308,6 +317,7 @@
         let selectedDate = null;
         let selectedTimeSlot = null;
         let availableSlots = [];
+        let myVehicles = [];
 
         // Configuration: API Base URL
         function getApiUrl() {
@@ -366,6 +376,7 @@
             $('#appointment_date').attr('min', today);
             
             setupNavAuth();
+            loadMyVehicles();
             loadServices();
             setupEventListeners();
         });
@@ -380,7 +391,101 @@
                 }
             });
 
+            $('#vehicle_selector').on('change', function() {
+                const selectedId = $(this).val();
+                applySelectedVehicle(selectedId);
+            });
+
             $('#appointment-form').on('submit', handleFormSubmit);
+        }
+
+        function loadMyVehicles() {
+            const token = getAuthToken();
+            if (!token) {
+                return;
+            }
+
+            const apiUrl = getApiUrl();
+
+            $.ajax({
+                url: `${apiUrl}/me/vehicles`,
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                success: function(res) {
+                    myVehicles = (res && res.data && res.data.vehicles) ? res.data.vehicles : [];
+                    renderVehicleSelector();
+                },
+                error: function(xhr) {
+                    if (xhr && xhr.status === 401) {
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('currentUser');
+                    }
+                }
+            });
+        }
+
+        function renderVehicleSelector() {
+            const wrapper = $('#vehicle-selector-wrapper');
+            const select = $('#vehicle_selector');
+            const hint = $('#vehicle-selector-hint');
+
+            if (!myVehicles || myVehicles.length === 0) {
+                wrapper.removeClass('hidden');
+                select.html('<option value="">Manual entry</option>');
+                hint.text('No registered vehicles found. You can add one in “My Vehicles” and come back.');
+                applySelectedVehicle('');
+                return;
+            }
+
+            wrapper.removeClass('hidden');
+            hint.text('Choose a vehicle to auto-fill details, or select “Manual entry”.');
+
+            const options = ['<option value="">Manual entry</option>'];
+            myVehicles.forEach(function(v) {
+                const id = (v && (v.id !== undefined && v.id !== null)) ? String(v.id) : '';
+                const label = `${v.year || ''} ${v.make || ''} ${v.model || ''} (${v.license_plate || 'N/A'})`.trim();
+                if (id) {
+                    options.push(`<option value="${id}">${label}</option>`);
+                }
+            });
+            select.html(options.join(''));
+        }
+
+        function applySelectedVehicle(vehicleId) {
+            const fields = ['#vehicle_make', '#vehicle_model', '#vehicle_year', '#vehicle_license_plate', '#vehicle_vin', '#vehicle_color', '#vehicle_mileage'];
+
+            if (!vehicleId) {
+                fields.forEach(function(sel) {
+                    $(sel).prop('readonly', false);
+                });
+                return;
+            }
+
+            const v = (myVehicles || []).find(function(item) {
+                return item && String(item.id) === String(vehicleId);
+            });
+
+            if (!v) {
+                fields.forEach(function(sel) {
+                    $(sel).prop('readonly', false);
+                });
+                return;
+            }
+
+            $('#vehicle_make').val(v.make || '');
+            $('#vehicle_model').val(v.model || '');
+            $('#vehicle_year').val(v.year || '');
+            $('#vehicle_license_plate').val(v.license_plate || '');
+            $('#vehicle_vin').val(v.vin || '');
+            $('#vehicle_color').val(v.color || '');
+            $('#vehicle_mileage').val((v.mileage !== undefined && v.mileage !== null) ? v.mileage : '');
+
+            fields.forEach(function(sel) {
+                $(sel).prop('readonly', true);
+            });
         }
 
         // Load services from API
