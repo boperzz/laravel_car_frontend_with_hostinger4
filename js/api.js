@@ -47,9 +47,16 @@
     function toRelativeRoot(path) {
         var pathname = (global.location && global.location.pathname) ? global.location.pathname : '/';
         var hostname = (global.location && global.location.hostname) ? global.location.hostname : '';
+        var protocol = (global.location && global.location.protocol) ? global.location.protocol : '';
         var segments = pathname.split('/').filter(function (s) {
             return !!s;
         });
+        var cleaned = String(path || '').replace(/^\/+/, '');
+
+        // Cordova / WebView: file:// paths should remain relative within www/
+        if (protocol === 'file:' || protocol === 'cdvfile:') {
+            return cleaned;
+        }
 
         var root = '/';
         var isGitHubPages = /github\.io$/i.test(hostname);
@@ -57,7 +64,6 @@
             root = '/' + segments[0] + '/';
         }
 
-        var cleaned = String(path || '').replace(/^\/+/, '');
         return root + cleaned;
     }
 

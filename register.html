@@ -341,12 +341,10 @@
 
             Auth.register(formData)
                 .done(function(res) {
-                    const user = res && res.data && res.data.user;
-
-                    showAlert('success', 'Account created successfully.');
+                    showAlert('success', (res && res.message) ? res.message : 'Registration successful. Please verify your email before logging in.');
                     setTimeout(function() {
-                        Auth.redirectToDashboard(user && user.role ? user.role : null);
-                    }, 300);
+                        window.location.href = 'login.html';
+                    }, 800);
                 })
                 .fail(function(xhr) {
                     const json = xhr && xhr.responseJSON;

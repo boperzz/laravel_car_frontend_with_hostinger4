@@ -266,6 +266,35 @@
                     const xhr = xhrOrErr && xhrOrErr.status ? xhrOrErr : null;
                     const json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
 
+                    if (xhr && xhr.status === 403) {
+                        const msg = (json && json.message) ? json.message : 'Please verify your email before logging in.';
+                        showAlert('error', msg);
+
+                        const identifier = ($('#username').val() || '').trim();
+                        if (identifier) {
+                            const resendHtml = `
+                                <div class="mt-3 text-sm">
+                                    <button id="resend-verification" class="text-blue-600 hover:text-blue-800 hover:underline font-medium" type="button">
+                                        Resend verification email
+                                    </button>
+                                </div>
+                            `;
+                            $('#alert-container').append(resendHtml);
+
+                            $('#resend-verification').on('click', function () {
+                                $(this).prop('disabled', true).text('Sending...');
+                                Auth.resendVerification(identifier)
+                                    .done(function (r) {
+                                        showAlert('success', (r && r.message) ? r.message : 'If your account exists and is not verified, a verification email has been sent.');
+                                    })
+                                    .fail(function () {
+                                        showAlert('error', 'Failed to resend verification email. Please try again.');
+                                    });
+                            });
+                        }
+                        return;
+                    }
+
                     if (xhr && xhr.status === 422) {
                         if (json && json.errors) {
                             setFieldErrors(json.errors);

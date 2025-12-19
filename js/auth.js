@@ -116,15 +116,31 @@
                 'Accept': 'application/json'
             }
         }).then(function (res) {
-            var token = res && res.data && res.data.token;
-            var user = res && res.data && res.data.user;
-
-            if (!token || !user) {
-                return global.jQuery.Deferred().reject({ message: 'Registration failed' });
-            }
-
-            setAuth(token, user);
             return res;
+        });
+    }
+
+    function resendVerification(identifier) {
+        return Api.request({
+            url: Api.getBaseUrl() + '/auth/resend-verification',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ email: identifier }),
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+    }
+
+    function verifyEmail(token) {
+        return Api.request({
+            url: Api.getBaseUrl() + '/auth/verify-email',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ token: token }),
+            headers: {
+                'Accept': 'application/json'
+            }
         });
     }
 
@@ -138,6 +154,8 @@
         normalizeRole: normalizeRole,
         redirectToDashboard: redirectToDashboard,
         login: login,
-        register: register
+        register: register,
+        resendVerification: resendVerification,
+        verifyEmail: verifyEmail
     };
 })(window);

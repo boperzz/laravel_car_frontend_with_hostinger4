@@ -405,10 +405,23 @@
             // Set minimum date to today
             const today = new Date().toISOString().split('T')[0];
             $('#appointment_date').attr('min', today);
-            
+            if (getAuthToken()) {
+                // Booking now requires login; keep the fields but prevent edits to reduce confusion.
+                try {
+                    const rawUser = localStorage.getItem('currentUser');
+                    const currentUser = rawUser ? JSON.parse(rawUser) : null;
+                    if (currentUser) {
+                        $('#customer_name').val(((currentUser.name || '') + ' ' + (currentUser.last_name || '')).trim() || (currentUser.name || ''));
+                        $('#customer_email').val(currentUser.email || '');
+                    }
+                } catch (e) {}
+                $('#customer_name').prop('disabled', true);
+                $('#customer_email').prop('disabled', true);
+            }
+
             setupNavAuth();
-            loadMyVehicles();
             loadServices();
+            loadMyVehicles();
             setupEventListeners();
         });
 
@@ -696,6 +709,15 @@
         function handleFormSubmit(e) {
             e.preventDefault();
 
+            const token = getAuthToken();
+            if (!token) {
+                showAlert('error', 'Please login to book an appointment.');
+                setTimeout(function () {
+                    window.location.href = 'login.html';
+                }, 500);
+                return;
+            }
+
             if (selectedServices.length === 0) {
                 showAlert('error', 'Please select at least one service.');
                 return;
@@ -712,9 +734,6 @@
             }
 
             const formData = {
-                customer_name: $('#customer_name').val(),
-                customer_email: $('#customer_email').val(),
-                customer_phone: $('#customer_phone').val() || null,
                 vehicle_make: $('#vehicle_make').val(),
                 vehicle_model: $('#vehicle_model').val(),
                 vehicle_year: parseInt($('#vehicle_year').val()),
@@ -734,14 +753,19 @@
         function submitAppointment(data) {
             const apiUrl = getApiUrl();
             const submitBtn = $('#submit-btn');
+            const token = getAuthToken();
 
             submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Booking...');
 
             $.ajax({
-                url: `${apiUrl}/public/appointments`,
+                url: `${apiUrl}/me/appointments`,
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(data),
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
                 success: function(response) {
                     if (response.success) {
                         showAlert('success', `Appointment booked successfully! Job Order #: ${response.data.job_order_number || response.data.appointment_id}`);
