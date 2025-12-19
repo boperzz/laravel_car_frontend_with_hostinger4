@@ -213,6 +213,86 @@
         </div>
     </div>
 
+    <!-- View Vehicle Modal -->
+    <div id="vehicle-view-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Vehicle Details</h3>
+                    <button onclick="closeViewVehicleModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div id="vehicle-view-content"></div>
+
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeViewVehicleModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Close</button>
+                    <button type="button" onclick="viewModalEditVehicle()" class="px-4 py-2 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white rounded-lg transition">
+                        <i class="fas fa-edit mr-2"></i>Edit
+                    </button>
+                    <button type="button" onclick="viewModalDeleteVehicle()" class="px-4 py-2 border-2 border-red-600 bg-transparent hover:bg-red-600 text-red-600 hover:text-white rounded-lg transition">
+                        <i class="fas fa-trash mr-2"></i>Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Vehicle Modal -->
+    <div id="vehicle-edit-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Edit Vehicle</h3>
+                    <button onclick="closeEditVehicleModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="vehicle-edit-form" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Make *</label>
+                            <input type="text" id="edit_vehicle_make" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Model *</label>
+                            <input type="text" id="edit_vehicle_model" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Year *</label>
+                            <input type="number" id="edit_vehicle_year" min="1900" max="2025" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">License Plate *</label>
+                            <input type="text" id="edit_vehicle_license_plate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">VIN</label>
+                        <input type="text" id="edit_vehicle_vin" maxlength="17" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                            <input type="text" id="edit_vehicle_color" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Mileage</label>
+                            <input type="number" id="edit_vehicle_mileage" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="closeEditVehicleModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Configuration: API Base URL
         function getApiUrl() {
@@ -279,8 +359,12 @@
             setupNavAuth();
 
             $('#vehicle-form').on('submit', handleAddVehicle);
+            $('#vehicle-edit-form').on('submit', handleEditVehicle);
             loadVehicles();
         });
+
+        let vehiclesCache = {};
+        let activeVehicleId = null;
 
         function loadVehicles() {
             $('#vehicles-loading').show();
@@ -296,6 +380,13 @@
                 },
                 success: function(res) {
                     const vehicles = res && res.data && res.data.vehicles ? res.data.vehicles : [];
+
+                    vehiclesCache = {};
+                    vehicles.forEach(v => {
+                        if (v && v.id != null) {
+                            vehiclesCache[String(v.id)] = v;
+                        }
+                    });
 
                     $('#vehicles-loading').hide();
 
@@ -365,11 +456,14 @@
                             </div>
 
                             <div class="flex space-x-2">
-                                <button onclick="viewVehicle('${vehicle.id || vehicle.license_plate}')" class="flex-1 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white text-center px-4 py-2 rounded transition">
+                                <button onclick="viewVehicle('${vehicle.id}')" class="flex-1 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white text-center px-4 py-2 rounded transition">
                                     <i class="fas fa-eye mr-1"></i>View
                                 </button>
-                                <button onclick="editVehicle('${vehicle.id || vehicle.license_plate}')" class="flex-1 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white text-center px-4 py-2 rounded transition">
+                                <button onclick="editVehicle('${vehicle.id}')" class="flex-1 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white text-center px-4 py-2 rounded transition">
                                     <i class="fas fa-edit mr-1"></i>Edit
+                                </button>
+                                <button onclick="deleteVehicle('${vehicle.id}')" class="flex-1 border-2 border-red-600 bg-transparent hover:bg-red-600 text-red-600 hover:text-white text-center px-4 py-2 rounded transition">
+                                    <i class="fas fa-trash mr-1"></i>Delete
                                 </button>
                             </div>
                         </div>
@@ -445,11 +539,203 @@
         }
 
         function viewVehicle(id) {
-            alert('Vehicle details view - Coming soon!\nVehicle ID: ' + id);
+            const key = String(id);
+            const vehicle = vehiclesCache[key];
+            if (!vehicle) {
+                showAlert('error', 'Vehicle not found. Please refresh the page.');
+                return;
+            }
+
+            activeVehicleId = key;
+
+            const pictureUrl = getVehiclePictureUrl(vehicle);
+            const safe = (v) => (v == null || v === '') ? '-' : String(v);
+            const mileageText = vehicle.mileage ? Number(vehicle.mileage).toLocaleString() + ' miles' : '-';
+
+            $('#vehicle-view-content').html(`
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="h-20 w-20 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                        ${pictureUrl ? `
+                            <img src="${pictureUrl}" alt="${safe(vehicle.make)} ${safe(vehicle.model)}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\"fas fa-car text-3xl text-gray-300\"></i>';" />
+                        ` : `
+                            <i class="fas fa-car text-3xl text-gray-300"></i>
+                        `}
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-900">${safe(vehicle.make)} ${safe(vehicle.model)} ${safe(vehicle.year)}</h4>
+                        <p class="text-sm text-gray-600"><i class="fas fa-id-card mr-2"></i>${safe(vehicle.license_plate)}</p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">Make</span><span class="text-sm text-gray-900">${safe(vehicle.make)}</span></div>
+                    <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">Model</span><span class="text-sm text-gray-900">${safe(vehicle.model)}</span></div>
+                    <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">Year</span><span class="text-sm text-gray-900">${safe(vehicle.year)}</span></div>
+                    <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">License Plate</span><span class="text-sm text-gray-900">${safe(vehicle.license_plate)}</span></div>
+                    <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">VIN</span><span class="text-sm text-gray-900">${safe(vehicle.vin)}</span></div>
+                    <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">Color</span><span class="text-sm text-gray-900">${safe(vehicle.color)}</span></div>
+                    <div class="flex justify-between"><span class="text-sm font-medium text-gray-600">Mileage</span><span class="text-sm text-gray-900">${mileageText}</span></div>
+                </div>
+            `);
+
+            $('#vehicle-view-modal').removeClass('hidden');
         }
 
         function editVehicle(id) {
-            alert('Vehicle edit - Coming soon!\nVehicle ID: ' + id);
+            const key = String(id);
+            const vehicle = vehiclesCache[key];
+            if (!vehicle) {
+                showAlert('error', 'Vehicle not found. Please refresh the page.');
+                return;
+            }
+
+            activeVehicleId = key;
+
+            $('#edit_vehicle_make').val(vehicle.make || '');
+            $('#edit_vehicle_model').val(vehicle.model || '');
+            $('#edit_vehicle_year').val(vehicle.year || '');
+            $('#edit_vehicle_license_plate').val(vehicle.license_plate || '');
+            $('#edit_vehicle_vin').val(vehicle.vin || '');
+            $('#edit_vehicle_color').val(vehicle.color || '');
+            $('#edit_vehicle_mileage').val(vehicle.mileage != null ? vehicle.mileage : '');
+
+            $('#vehicle-edit-modal').removeClass('hidden');
+        }
+
+        function closeViewVehicleModal() {
+            $('#vehicle-view-modal').addClass('hidden');
+        }
+
+        function closeEditVehicleModal() {
+            $('#vehicle-edit-modal').addClass('hidden');
+            $('#vehicle-edit-form')[0].reset();
+        }
+
+        function viewModalEditVehicle() {
+            closeViewVehicleModal();
+            if (activeVehicleId) {
+                editVehicle(activeVehicleId);
+            }
+        }
+
+        function viewModalDeleteVehicle() {
+            if (!activeVehicleId) return;
+            deleteVehicle(activeVehicleId);
+        }
+
+        function getVehiclePayloadFromEditForm() {
+            const make = String($('#edit_vehicle_make').val() || '').trim();
+            const model = String($('#edit_vehicle_model').val() || '').trim();
+            const yearRaw = $('#edit_vehicle_year').val();
+            const year = yearRaw !== '' ? parseInt(yearRaw) : NaN;
+            const licensePlate = String($('#edit_vehicle_license_plate').val() || '').trim();
+            const vin = String($('#edit_vehicle_vin').val() || '').trim();
+            const color = String($('#edit_vehicle_color').val() || '').trim();
+            const mileageRaw = $('#edit_vehicle_mileage').val();
+            const mileage = mileageRaw !== '' ? parseInt(mileageRaw) : null;
+
+            const maxYear = new Date().getFullYear() + 1;
+            if (!make) return { error: 'Make is required.' };
+            if (!model) return { error: 'Model is required.' };
+            if (!licensePlate) return { error: 'License plate is required.' };
+            if (!Number.isInteger(year) || year < 1900 || year > maxYear) return { error: 'Year must be a valid number.' };
+            if (mileage != null && (!Number.isInteger(mileage) || mileage < 0)) return { error: 'Mileage must be a valid number.' };
+            if (vin && vin.length > 17) return { error: 'VIN must be 17 characters or less.' };
+
+            return {
+                payload: {
+                    make,
+                    model,
+                    year,
+                    license_plate: licensePlate,
+                    vin: vin || null,
+                    color: color || null,
+                    mileage: mileage,
+                }
+            };
+        }
+
+        function handleEditVehicle(e) {
+            e.preventDefault();
+
+            if (!activeVehicleId) {
+                showAlert('error', 'No vehicle selected.');
+                return;
+            }
+
+            const { payload, error } = getVehiclePayloadFromEditForm();
+            if (error) {
+                showAlert('error', error);
+                return;
+            }
+
+            $.ajax({
+                url: `${getApiUrl()}/me/vehicles/${activeVehicleId}`,
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                },
+                success: function(res) {
+                    const updated = res && res.data && res.data.vehicle ? res.data.vehicle : null;
+                    if (updated && updated.id != null) {
+                        vehiclesCache[String(updated.id)] = updated;
+                    }
+                    closeEditVehicleModal();
+                    loadVehicles();
+                    showAlert('success', 'Vehicle updated successfully!');
+                },
+                error: function(xhr) {
+                    if (xhr && xhr.status === 401) {
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    const json = xhr && xhr.responseJSON;
+                    showAlert('error', (json && json.message) ? json.message : 'Failed to update vehicle.');
+                }
+            });
+        }
+
+        function deleteVehicle(id) {
+            const key = String(id);
+            const vehicle = vehiclesCache[key];
+            const label = vehicle ? `${vehicle.make} ${vehicle.model} (${vehicle.license_plate})` : 'this vehicle';
+
+            if (!confirm(`Are you sure you want to delete ${label}? This action cannot be undone.`)) {
+                return;
+            }
+
+            $.ajax({
+                url: `${getApiUrl()}/me/vehicles/${key}`,
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                },
+                success: function() {
+                    closeViewVehicleModal();
+                    closeEditVehicleModal();
+                    activeVehicleId = null;
+                    loadVehicles();
+                    showAlert('success', 'Vehicle deleted successfully!');
+                },
+                error: function(xhr) {
+                    if (xhr && xhr.status === 401) {
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    const json = xhr && xhr.responseJSON;
+                    showAlert('error', (json && json.message) ? json.message : 'Failed to delete vehicle.');
+                }
+            });
         }
 
         function showAlert(type, message) {
