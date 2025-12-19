@@ -476,16 +476,39 @@
         }
 
         function getVehiclePictureUrl(vehicle) {
-            const raw = vehicle && vehicle.picture ? String(vehicle.picture) : '';
+            const raw = vehicle && (vehicle.picture_url || vehicle.picture) ? String(vehicle.picture_url || vehicle.picture) : '';
             if (!raw) return '';
 
             if (raw.startsWith('http://') || raw.startsWith('https://')) {
+                try {
+                    const pageIsHttps = window.location && window.location.protocol === 'https:';
+                    const siteRoot = getApiUrl().replace(/\/api\/?$/, '');
+                    const backendUrl = new URL(siteRoot);
+                    const imageUrl = new URL(raw);
+
+                    if (pageIsHttps && imageUrl.protocol === 'http:' && imageUrl.host === backendUrl.host) {
+                        imageUrl.protocol = 'https:';
+                        return imageUrl.toString();
+                    }
+                } catch (e) {
+                    // ignore
+                }
+
                 return raw;
             }
 
             const siteRoot = getApiUrl().replace(/\/api\/?$/, '');
-            const cleaned = raw.replace(/^\//, '').replace(/^storage\//, '');
-            return `${siteRoot}/storage/${cleaned}`;
+            const normalized = raw.replace(/^\//, '');
+
+            if (normalized.startsWith('storage/')) {
+                return `${siteRoot}/${normalized}`;
+            }
+
+            if (normalized.startsWith('public/storage/')) {
+                return `${siteRoot}/${normalized}`;
+            }
+
+            return `${siteRoot}/storage/${normalized.replace(/^storage\//, '')}`;
         }
 
         function showAddVehicleModal() {
