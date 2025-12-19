@@ -64,7 +64,7 @@
 <body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
     <div class="min-h-screen">
         <!-- Navigation -->
-        <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
+        <nav x-data="{ mobileOpen: false }" class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex">
@@ -94,7 +94,43 @@
                     
                     <!-- Profile Dropdown / Login Button -->
                     <div class="hidden sm:flex sm:items-center sm:ms-6">
-                        <div class="flex items-center space-x-3">
+                        <div class="flex items-center space-x-3 nav-actions">
+                            <a href="booking.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                                <i class="fas fa-calendar-plus mr-2"></i>Book Appointment
+                            </a>
+                            <a href="login.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                                <i class="fas fa-sign-in-alt mr-2"></i>Login
+                            </a>
+                            <a href="register.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                                <i class="fas fa-user-plus mr-2"></i>Register
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Mobile menu button -->
+                    <div class="flex items-center sm:hidden">
+                        <button type="button" @click="mobileOpen = !mobileOpen" class="inline-flex items-center justify-center p-2 rounded-lg text-slate-700 hover:bg-white/70 focus:outline-none transition">
+                            <span class="sr-only">Open main menu</span>
+                            <i class="fas" :class="mobileOpen ? 'fa-times' : 'fa-bars'"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile menu dropdown -->
+            <div class="sm:hidden" x-show="mobileOpen" x-transition @click.away="mobileOpen = false">
+                <div class="px-4 pt-2 pb-4 space-y-1 bg-white/90 backdrop-blur-md border-t border-slate-200/50">
+                    <a href="index.html" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-900 bg-white/60">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                    </a>
+                    <a href="vehicles.html" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-white/60">
+                        <i class="fas fa-car mr-2"></i>My Vehicles
+                    </a>
+                    <a href="appointments.html" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-white/60">
+                        <i class="fas fa-calendar mr-2"></i>Appointments
+                    </a>
+                    <div class="pt-2 border-t border-slate-200/70">
+                        <div class="flex flex-col space-y-2 nav-actions">
                             <a href="booking.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
                                 <i class="fas fa-calendar-plus mr-2"></i>Book Appointment
                             </a>
@@ -298,21 +334,27 @@
             // Hide login/register buttons and add Profile/Logout
             $('nav a[href="login.html"]').hide();
             $('nav a[href="register.html"]').hide();
-            const navActions = $('nav div.flex.items-center.space-x-3').first();
-            if (navActions.length) {
+
+            $('nav .nav-actions').each(function () {
+                const navActions = $(this);
+                if (navActions.find('.nav-profile-link').length > 0) {
+                    return;
+                }
+
                 navActions.append(`
-                    <a href="profile.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                    <a href="profile.html" class="nav-profile-link border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
                         <i class="fas fa-user mr-2"></i>Profile
                     </a>
-                    <a href="#" id="logout-link" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                    <a href="#" class="nav-logout-link border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
                         <i class="fas fa-sign-out-alt mr-2"></i>Logout
                     </a>
                 `);
-                $('#logout-link').on('click', function(e) {
+
+                navActions.find('.nav-logout-link').last().on('click', function (e) {
                     e.preventDefault();
                     logout();
                 });
-            }
+            });
 
             loadDashboardData();
         });
