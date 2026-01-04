@@ -29,6 +29,17 @@
         return d.toLocaleString();
     }
 
+    function formatMoney(value) {
+        if (value === null || value === undefined || value === '') {
+            return '-';
+        }
+        var n = Number(value);
+        if (isNaN(n)) {
+            return '-';
+        }
+        return '$' + n.toFixed(2);
+    }
+
     function setLoading(isLoading) {
         state.loading = isLoading;
         global.jQuery('#admin-appointments-loading').toggleClass('hidden', !isLoading);
@@ -152,10 +163,18 @@
         global.jQuery('#detail-id').text(appointment.id || '-');
         global.jQuery('#detail-status').text(status ? (status.charAt(0).toUpperCase() + status.slice(1)) : '-');
         global.jQuery('#detail-date').text(formatDate(appointment.appointment_date));
+        global.jQuery('#detail-end-time').text(formatDate(appointment.end_time));
         global.jQuery('#detail-customer').text((appointment.user && appointment.user.name) ? appointment.user.name : '-');
+        global.jQuery('#detail-customer-email').text((appointment.user && appointment.user.email) ? appointment.user.email : '-');
         global.jQuery('#detail-vehicle').text((appointment.vehicle && appointment.vehicle.full_name) ? appointment.vehicle.full_name : '-');
+        global.jQuery('#detail-plate').text((appointment.vehicle && appointment.vehicle.license_plate) ? appointment.vehicle.license_plate : '-');
         global.jQuery('#detail-staff').text((appointment.staff && appointment.staff.name) ? appointment.staff.name : 'Unassigned');
-        global.jQuery('#detail-total').text(appointment.total_price !== null && appointment.total_price !== undefined ? ('$' + Number(appointment.total_price).toFixed(2)) : '-');
+        global.jQuery('#detail-total').text(formatMoney(appointment.total_price));
+        global.jQuery('#detail-created-at').text(formatDate(appointment.created_at));
+        global.jQuery('#detail-updated-at').text(formatDate(appointment.updated_at));
+        global.jQuery('#detail-paid-at').text(formatDate(appointment.paid_at));
+
+        renderServices(appointment);
 
         var $lockBanner = global.jQuery('#admin-assignment-locked-banner');
         var $assignBox = global.jQuery('#admin-assign-box');
@@ -169,6 +188,27 @@
         }
 
         renderStaffOptions(appointment);
+    }
+
+    function renderServices(appointment) {
+        var services = appointment && appointment.services ? appointment.services : [];
+        var $list = global.jQuery('#detail-services');
+        var $empty = global.jQuery('#detail-services-empty');
+
+        $list.empty();
+
+        if (!Array.isArray(services) || !services.length) {
+            $empty.removeClass('hidden');
+            return;
+        }
+
+        $empty.addClass('hidden');
+        services.forEach(function (s) {
+            var name = s && s.name ? s.name : 'Service';
+            var price = (s && (s.price !== null && s.price !== undefined)) ? formatMoney(s.price) : '';
+            var label = price && price !== '-' ? (name + ' (' + price + ')') : name;
+            $list.append('<li>' + escapeHtml(label) + '</li>');
+        });
     }
 
     function renderStaffOptions(appointment) {

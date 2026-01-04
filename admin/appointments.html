@@ -86,16 +86,28 @@
                         <div><strong>ID:</strong> <span id="detail-id"></span></div>
                         <div><strong>Status:</strong> <span id="detail-status"></span></div>
                         <div><strong>Date:</strong> <span id="detail-date"></span></div>
+                        <div><strong>End Time:</strong> <span id="detail-end-time"></span></div>
                         <div><strong>Customer:</strong> <span id="detail-customer"></span></div>
+                        <div><strong>Email:</strong> <span id="detail-customer-email"></span></div>
                         <div><strong>Vehicle:</strong> <span id="detail-vehicle"></span></div>
+                        <div><strong>Plate:</strong> <span id="detail-plate"></span></div>
                         <div><strong>Staff:</strong> <span id="detail-staff"></span></div>
                         <div><strong>Total:</strong> <span id="detail-total"></span></div>
+                        <div><strong>Created:</strong> <span id="detail-created-at"></span></div>
+                        <div><strong>Updated:</strong> <span id="detail-updated-at"></span></div>
+                        <div><strong>Paid At:</strong> <span id="detail-paid-at"></span></div>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="font-semibold text-gray-800 mb-2">Services</div>
+                        <div id="detail-services-empty" class="text-sm text-slate-500">No services listed.</div>
+                        <ul id="detail-services" class="text-sm list-disc pl-5 space-y-1"></ul>
                     </div>
 
                     <div id="admin-assignment-locked-banner" class="hidden mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                         <p class="text-yellow-800 text-sm">
                             <i class="fas fa-lock mr-2"></i>
-                            Staff assignment is locked for appointments that are in progress, completed, cancelled, or already assigned.
+                            Staff assignment is locked for appointments that are in progress, completed, or cancelled.
                         </p>
                     </div>
 

@@ -36,8 +36,13 @@
         return !!appointment.staff_id;
     }
 
+    function isStatusLockedForStaffAssignment(status) {
+        var s = normalizeStatus(status);
+        return s === STATUS.IN_PROGRESS || s === STATUS.COMPLETED || s === STATUS.CANCELLED;
+    }
+
     function isEditableForStaffAssignment(status) {
-        return normalizeStatus(status) === STATUS.PENDING;
+        return !isStatusLockedForStaffAssignment(status);
     }
 
     function getStaffAssignmentLockReason(appointment) {
@@ -49,7 +54,7 @@
             return 'already_assigned';
         }
 
-        if (!isEditableForStaffAssignment(appointment.status)) {
+        if (isStatusLockedForStaffAssignment(appointment.status)) {
             return 'status_locked';
         }
 
@@ -65,6 +70,7 @@
         normalizeStatus: normalizeStatus,
         getStatusBadgeColor: getStatusBadgeColor,
         hasAssignedStaff: hasAssignedStaff,
+        isStatusLockedForStaffAssignment: isStatusLockedForStaffAssignment,
         isEditableForStaffAssignment: isEditableForStaffAssignment,
         getStaffAssignmentLockReason: getStaffAssignmentLockReason,
         isStaffAssignmentLocked: isStaffAssignmentLocked
