@@ -358,6 +358,11 @@
                         <i class=\"fas fa-edit mr-1\"></i>Edit
                     </button>
                 ` : '';
+                const cancelBtn = isPending ? `
+                    <button onclick="cancelAppointment('${encoded}')" class="ml-2 border-2 border-red-600 bg-transparent hover:bg-red-600 text-red-600 hover:text-white px-3 py-1 rounded transition">
+                        <i class=\"fas fa-times mr-1\"></i>Cancel
+                    </button>
+                ` : '';
 
                 html += `
                     <tr>
@@ -372,6 +377,7 @@
                                 <i class="fas fa-eye mr-1"></i>View
                             </button>
                             ${editBtn}
+                            ${cancelBtn}
                         </td>
                     </tr>
                 `;
@@ -430,6 +436,67 @@
         let allServices = [];
         let editAppointment = null;
         let editSelectedServiceIds = [];
+
+        function cancelAppointment(encoded) {
+            const a = parseAppointmentEncoded(encoded);
+            if (!a) {
+                showAlert('error', 'Failed to cancel appointment.');
+                return;
+            }
+
+            const isPending = String(a.status || '').toLowerCase() === 'pending';
+            if (!isPending) {
+                return;
+            }
+
+            const ok = confirm('Are you sure you want to cancel this appointment?');
+            if (!ok) {
+                return;
+            }
+
+            const url = `${getApiUrl()}/me/appointments/${a.id}`;
+
+            const req = (window.Api && Api.request)
+                ? Api.request({
+                    url: url,
+                    method: 'DELETE'
+                })
+                : $.ajax({
+                    url: url,
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                    }
+                });
+
+            req.done(function(res) {
+                if (res && res.success) {
+                    showAlert('success', 'Appointment cancelled successfully.');
+                    loadAppointments();
+                    return;
+                }
+                showAlert('error', (res && res.message) ? res.message : 'Unable to cancel appointment.');
+            }).fail(function(xhr) {
+                if (xhr && xhr.status === 401) {
+                    return;
+                }
+
+                let msg = 'Unable to cancel appointment. Please try again later.';
+                if (xhr && xhr.responseJSON) {
+                    if (xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    if (xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        if (errors && errors.length) {
+                            msg = errors.join('<br>');
+                        }
+                    }
+                }
+                showAlert('error', msg);
+            });
+        }
 
         function ensureServicesLoaded() {
             if (allServices && allServices.length) {
