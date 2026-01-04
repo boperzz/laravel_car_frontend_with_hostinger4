@@ -284,6 +284,11 @@
             loadAppointments();
         });
 
+        let allAppointments = [];
+        let currentSearch = '';
+        let currentStatusFilter = 'recent';
+        let searchDebounceTimer = null;
+
         function loadAppointments() {
             $('#appointments-loading').show();
             $('#appointments-empty').addClass('hidden');
@@ -302,12 +307,14 @@
                     $('#appointments-loading').hide();
 
                     if (!appointments.length) {
+                        allAppointments = [];
                         $('#appointments-empty').removeClass('hidden');
                         return;
                     }
 
                     $('#appointments-container').removeClass('hidden');
-                    renderAppointments(appointments);
+                    allAppointments = appointments;
+                    applyAppointmentFilters();
                 },
                 error: function(xhr) {
                     $('#appointments-loading').hide();
@@ -325,8 +332,117 @@
             });
         }
 
+        function applyAppointmentFilters() {
+            const q = String(currentSearch || '').trim().toLowerCase();
+            const status = String(currentStatusFilter || 'recent').toLowerCase();
+
+            let list = Array.isArray(allAppointments) ? allAppointments.slice() : [];
+
+            if (status !== 'recent') {
+                list = list.filter(function(a) {
+                    return String(a && a.status ? a.status : '').toLowerCase() === status;
+                });
+            }
+
+            if (q) {
+                list = list.filter(function(a) {
+                    const vehicle = a && a.vehicle ? `${a.vehicle.make || ''} ${a.vehicle.model || ''} ${a.vehicle.year || ''} ${a.vehicle.license_plate || ''}` : '';
+                    const services = (a && a.services && a.services.length)
+                        ? a.services.map(function(s) { return s && s.name ? s.name : ''; }).join(' ')
+                        : '';
+                    const staff = a && a.staff ? (a.staff.name || a.staff.username || '') : '';
+                    const date = a && a.appointment_date ? String(a.appointment_date) : '';
+                    const statusText = a && a.status ? String(a.status) : '';
+                    const haystack = `${vehicle} ${services} ${staff} ${date} ${statusText}`.toLowerCase();
+                    return haystack.indexOf(q) !== -1;
+                });
+            }
+
+            list.sort(function(a, b) {
+                const da = a && a.appointment_date ? Date.parse(a.appointment_date) : 0;
+                const db = b && b.appointment_date ? Date.parse(b.appointment_date) : 0;
+                return (db || 0) - (da || 0);
+            });
+
+            renderAppointments(list);
+        }
+
+        function initAppointmentFiltersUI() {
+            $('#appointments-search').off('input').on('input', function() {
+                const val = $(this).val();
+                if (searchDebounceTimer) {
+                    clearTimeout(searchDebounceTimer);
+                }
+                searchDebounceTimer = setTimeout(function() {
+                    currentSearch = val;
+                    applyAppointmentFilters();
+                }, 250);
+            });
+
+            $('#appointments-status-filter').off('change').on('change', function() {
+                currentStatusFilter = $(this).val();
+                applyAppointmentFilters();
+            });
+
+            $('#appointments-clear-filters').off('click').on('click', function() {
+                currentSearch = '';
+                currentStatusFilter = 'recent';
+                $('#appointments-search').val('');
+                $('#appointments-status-filter').val('recent');
+                applyAppointmentFilters();
+            });
+
+            $('#appointments-search').val(currentSearch);
+            $('#appointments-status-filter').val(currentStatusFilter);
+        }
+
         function renderAppointments(appointments) {
+            const hasResults = appointments && appointments.length;
+
             let html = `
+                <div class="mb-4 bg-white rounded-lg shadow p-4">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div class="flex-1">
+                            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Search</label>
+                            <div class="relative">
+                                <input id="appointments-search" type="text" placeholder="Search by vehicle, service, staff, status..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-64">
+                            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Status</label>
+                            <select id="appointments-status-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="recent">Most recent</option>
+                                <option value="pending">Pending</option>
+                                <option value="in_progress">In progress</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="md:self-end">
+                            <button id="appointments-clear-filters" type="button" class="px-4 py-2 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white rounded-lg transition font-semibold">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (!hasResults) {
+                html += `
+                    <div class="bg-white rounded-lg shadow p-12 text-center">
+                        <i class="fas fa-search text-5xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-700 mb-2">No matching appointments</h3>
+                        <p class="text-gray-500">Try adjusting your search or filter.</p>
+                    </div>
+                `;
+
+                $('#appointments-container').html(html);
+                initAppointmentFiltersUI();
+                return;
+            }
+
+            html += `
                 <div class="bg-white rounded-lg shadow overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -391,6 +507,7 @@
             `;
 
             $('#appointments-container').html(html);
+            initAppointmentFiltersUI();
         }
 
         function formatServices(services) {
