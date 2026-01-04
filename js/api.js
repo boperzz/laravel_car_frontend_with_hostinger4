@@ -45,26 +45,21 @@
     }
 
     function toRelativeRoot(path) {
-        var pathname = (global.location && global.location.pathname) ? global.location.pathname : '/';
-        var hostname = (global.location && global.location.hostname) ? global.location.hostname : '';
-        var protocol = (global.location && global.location.protocol) ? global.location.protocol : '';
-        var segments = pathname.split('/').filter(function (s) {
-            return !!s;
-        });
-        var cleaned = String(path || '').replace(/^\/+/, '');
+        var depth = 0;
 
-        // Cordova / WebView: file:// paths should remain relative within www/
-        if (protocol === 'file:' || protocol === 'cdvfile:') {
-            return cleaned;
+        if (global.location && global.location.pathname) {
+            var segments = global.location.pathname.split('/').filter(function (s) {
+                return !!s;
+            });
+
+            depth = Math.max(0, segments.length - 2);
         }
 
-        var root = '/';
-        var isGitHubPages = /github\.io$/i.test(hostname);
-        if (isGitHubPages && segments.length > 0) {
-            root = '/' + segments[0] + '/';
+        var prefix = '';
+        for (var i = 0; i < depth; i++) {
+            prefix += '../';
         }
-
-        return root + cleaned;
+        return prefix + path;
     }
 
     function request(opts) {

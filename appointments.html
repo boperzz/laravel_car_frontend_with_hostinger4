@@ -64,7 +64,7 @@
 <body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
     <div class="min-h-screen">
         <!-- Navigation -->
-        <nav x-data="{ mobileOpen: false }" class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
+        <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex">
@@ -93,43 +93,7 @@
                     </div>
 
                     <div class="hidden sm:flex sm:items-center sm:ms-6">
-                        <div class="flex items-center space-x-3 nav-actions">
-                            <a href="booking.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
-                                <i class="fas fa-calendar-plus mr-2"></i>Book Appointment
-                            </a>
-                            <a href="login.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
-                                <i class="fas fa-sign-in-alt mr-2"></i>Login
-                            </a>
-                            <a href="register.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
-                                <i class="fas fa-user-plus mr-2"></i>Register
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Mobile menu button -->
-                    <div class="flex items-center sm:hidden">
-                        <button type="button" @click="mobileOpen = !mobileOpen" class="inline-flex items-center justify-center p-2 rounded-lg text-slate-700 hover:bg-white/70 focus:outline-none transition">
-                            <span class="sr-only">Open main menu</span>
-                            <i class="fas" :class="mobileOpen ? 'fa-times' : 'fa-bars'"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mobile menu dropdown -->
-            <div class="sm:hidden" x-show="mobileOpen" x-transition @click.away="mobileOpen = false">
-                <div class="px-4 pt-2 pb-4 space-y-1 bg-white/90 backdrop-blur-md border-t border-slate-200/50">
-                    <a href="index.html" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-white/60">
-                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-                    </a>
-                    <a href="vehicles.html" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-white/60">
-                        <i class="fas fa-car mr-2"></i>My Vehicles
-                    </a>
-                    <a href="appointments.html" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-900 bg-white/60">
-                        <i class="fas fa-calendar mr-2"></i>Appointments
-                    </a>
-                    <div class="pt-2 border-t border-slate-200/70">
-                        <div class="flex flex-col space-y-2 nav-actions">
+                        <div class="flex items-center space-x-3">
                             <a href="booking.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
                                 <i class="fas fa-calendar-plus mr-2"></i>Book Appointment
                             </a>
@@ -185,12 +149,72 @@
                 </div>
             </div>
         </main>
+
+        <div id="edit-appointment-modal" class="hidden fixed inset-0 z-50">
+            <div class="absolute inset-0 bg-black/50"></div>
+            <div class="relative min-h-full flex items-center justify-center p-4">
+                <div class="w-full max-w-2xl bg-white rounded-lg shadow-xl overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-edit mr-2"></i>Edit Appointment
+                        </h3>
+                        <button type="button" id="edit-appointment-close" class="text-gray-500 hover:text-gray-800">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <form id="edit-appointment-form" class="px-6 py-5">
+                        <div class="mb-5">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Services <span class="text-red-500">*</span></label>
+                            <div id="edit-services-loading" class="text-center py-3 text-blue-600">
+                                <i class="fas fa-spinner fa-spin mr-2"></i>Loading services...
+                            </div>
+                            <div id="edit-services-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                        </div>
+
+                        <div class="mb-5">
+                            <label for="edit-appointment-date" class="block text-sm font-medium text-gray-700 mb-2">Appointment Date & Time <span class="text-red-500">*</span></label>
+                            <input type="datetime-local" id="edit-appointment-date" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p class="mt-2 text-sm text-gray-500">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                You can only edit pending appointments.
+                            </p>
+                        </div>
+
+                        <div class="mb-5">
+                            <label for="edit-notes" class="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                            <textarea id="edit-notes" rows="4"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Any special instructions or concerns..."></textarea>
+                        </div>
+
+                        <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-semibold text-gray-700">Estimated Total:</span>
+                                <span class="text-2xl font-bold text-blue-600" id="edit-total-price">$0.00</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-1" id="edit-estimated-duration">Duration: 0 minutes</p>
+                        </div>
+
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" id="edit-appointment-cancel" class="px-6 py-2 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white rounded-lg transition font-medium">
+                                Cancel
+                            </button>
+                            <button type="submit" id="edit-appointment-save" class="px-6 py-2 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white rounded-lg transition font-semibold">
+                                <i class="fas fa-save mr-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         // Configuration: API Base URL
         function getApiUrl() {
-            return 'https://laravel-test-system.orbit-node.com/api';
+            return (window.Api && Api.getBaseUrl) ? Api.getBaseUrl() : 'https://laravel-test-system.orbit-node.com/api';
         }
 
         function getAuthToken() {
@@ -203,29 +227,30 @@
             $('nav a[href="login.html"]').hide();
             $('nav a[href="register.html"]').hide();
 
-            $('nav .nav-actions').each(function () {
-                const navActions = $(this);
-                if (navActions.find('.nav-profile-link').length > 0) {
-                    return;
-                }
-
+            const navActions = $('nav div.flex.items-center.space-x-3').first();
+            if (navActions.length && navActions.find('#profile-link').length === 0) {
                 navActions.append(`
-                    <a href="profile.html" class="nav-profile-link border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                    <a href="profile.html" id="profile-link" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
                         <i class="fas fa-user mr-2"></i>Profile
                     </a>
-                    <a href="#" class="nav-logout-link border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                    <a href="#" id="logout-link" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
                         <i class="fas fa-sign-out-alt mr-2"></i>Logout
                     </a>
                 `);
 
-                navActions.find('.nav-logout-link').last().on('click', function (e) {
+                $('#logout-link').on('click', function(e) {
                     e.preventDefault();
                     logout();
                 });
-            });
+            }
         }
 
         function logout() {
+            if (window.Logout && Logout.logout) {
+                Logout.logout();
+                return;
+            }
+
             $.ajax({
                 url: `${getApiUrl()}/auth/logout`,
                 method: 'POST',
@@ -326,6 +351,13 @@
                 const staff = a.staff ? (a.staff.name || a.staff.username || '—') : '—';
                 const status = a.status || '—';
                 const total = (a.total_price !== null && a.total_price !== undefined) ? `$${parseFloat(a.total_price).toFixed(2)}` : '—';
+                const encoded = encodeURIComponent(JSON.stringify(a));
+                const isPending = String(a.status || '').toLowerCase() === 'pending';
+                const editBtn = isPending ? `
+                    <button onclick="openEditAppointment('${encoded}')" class="ml-2 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-3 py-1 rounded transition">
+                        <i class=\"fas fa-edit mr-1\"></i>Edit
+                    </button>
+                ` : '';
 
                 html += `
                     <tr>
@@ -336,9 +368,10 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${status}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-semibold">${total}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
-                            <button onclick='viewAppointment(${JSON.stringify(a)})' class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-3 py-1 rounded transition">
+                            <button onclick="viewAppointmentEncoded('${encoded}')" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-3 py-1 rounded transition">
                                 <i class="fas fa-eye mr-1"></i>View
                             </button>
+                            ${editBtn}
                         </td>
                     </tr>
                 `;
@@ -361,7 +394,21 @@
             }).join(', ');
         }
 
-        function viewAppointment(a) {
+        function parseAppointmentEncoded(encoded) {
+            try {
+                return JSON.parse(decodeURIComponent(encoded));
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function viewAppointmentEncoded(encoded) {
+            const a = parseAppointmentEncoded(encoded);
+            if (!a) {
+                showAlert('error', 'Failed to open appointment details.');
+                return;
+            }
+
             const vehicle = a.vehicle ? `${a.vehicle.make || ''} ${a.vehicle.model || ''} ${a.vehicle.year || ''}`.trim() : '—';
             const services = formatServices(a.services);
             const staff = a.staff ? (a.staff.name || a.staff.username || '—') : '—';
@@ -379,6 +426,277 @@
                 `Total: ${total}`
             );
         }
+
+        let allServices = [];
+        let editAppointment = null;
+        let editSelectedServiceIds = [];
+
+        function ensureServicesLoaded() {
+            if (allServices && allServices.length) {
+                return $.Deferred().resolve(allServices).promise();
+            }
+
+            $('#edit-services-loading').removeClass('hidden');
+            $('#edit-services-container').html('');
+
+            return $.ajax({
+                url: `${getApiUrl()}/public/services`,
+                method: 'GET',
+                dataType: 'json',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }).then(function(res) {
+                allServices = (res && res.success && res.data) ? res.data : [];
+                return allServices;
+            }).fail(function() {
+                allServices = [];
+                return allServices;
+            }).always(function() {
+                $('#edit-services-loading').addClass('hidden');
+            });
+        }
+
+        function openEditAppointment(encoded) {
+            const a = parseAppointmentEncoded(encoded);
+            if (!a) {
+                showAlert('error', 'Failed to open appointment for editing.');
+                return;
+            }
+
+            const status = String(a.status || '').toLowerCase();
+            if (status !== 'pending') {
+                return;
+            }
+
+            editAppointment = a;
+            editSelectedServiceIds = (a.services || []).map(function(s) { return s && s.id; }).filter(Boolean);
+
+            $('#edit-notes').val(a.notes || '');
+
+            const dtLocal = toDatetimeLocal(a.appointment_date);
+            if (dtLocal) {
+                $('#edit-appointment-date').val(dtLocal);
+            } else {
+                $('#edit-appointment-date').val('');
+            }
+
+            ensureServicesLoaded().then(function() {
+                renderEditServices();
+                updateEditSummary();
+                showEditModal();
+            });
+        }
+
+        function showEditModal() {
+            $('#edit-appointment-modal').removeClass('hidden');
+        }
+
+        function hideEditModal() {
+            $('#edit-appointment-modal').addClass('hidden');
+            editAppointment = null;
+            editSelectedServiceIds = [];
+        }
+
+        function renderEditServices() {
+            const container = $('#edit-services-container');
+            container.empty();
+
+            if (!allServices || !allServices.length) {
+                container.html('<p class="text-sm text-red-600">No services available.</p>');
+                return;
+            }
+
+            allServices.forEach(function(service) {
+                const isChecked = editSelectedServiceIds.indexOf(service.id) !== -1;
+                const card = $(
+                    `<div class="border rounded-lg p-4 hover:bg-gray-50 transition" data-service-id="${service.id}">
+                        <label class="flex items-start cursor-pointer">
+                            <input type="checkbox" value="${service.id}" class="mt-1 mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" ${isChecked ? 'checked' : ''}>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="font-semibold text-gray-900">${service.name}</p>
+                                        ${service.description ? `<p class="text-sm text-gray-600 mt-1">${service.description}</p>` : ''}
+                                    </div>
+                                    <div class="text-right ml-4">
+                                        <p class="font-semibold text-blue-600">$${parseFloat(service.price).toFixed(2)}</p>
+                                        <p class="text-xs text-gray-500">${service.duration_minutes} min</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>`
+                );
+
+                card.find('input[type="checkbox"]').on('change', function() {
+                    const id = parseInt($(this).val(), 10);
+                    if ($(this).is(':checked')) {
+                        if (editSelectedServiceIds.indexOf(id) === -1) {
+                            editSelectedServiceIds.push(id);
+                        }
+                    } else {
+                        editSelectedServiceIds = editSelectedServiceIds.filter(function(x) { return x !== id; });
+                    }
+                    updateEditSummary();
+                });
+
+                container.append(card);
+            });
+        }
+
+        function updateEditSummary() {
+            let total = 0;
+            let duration = 0;
+
+            (allServices || []).forEach(function(service) {
+                if (editSelectedServiceIds.indexOf(service.id) === -1) {
+                    return;
+                }
+                total += parseFloat(service.price) || 0;
+                duration += parseInt(service.duration_minutes, 10) || 0;
+            });
+
+            $('#edit-total-price').text(`$${total.toFixed(2)}`);
+            $('#edit-estimated-duration').text(`Duration: ${duration} minutes`);
+        }
+
+        function toDatetimeLocal(value) {
+            if (!value) {
+                return '';
+            }
+
+            const s = String(value);
+            if (s.indexOf('T') !== -1) {
+                return s.slice(0, 16);
+            }
+
+            if (s.indexOf(' ') !== -1) {
+                const parts = s.split(' ');
+                if (parts.length >= 2) {
+                    return `${parts[0]}T${parts[1].slice(0, 5)}`;
+                }
+            }
+
+            return '';
+        }
+
+        function toApiDatetime(datetimeLocal) {
+            if (!datetimeLocal) {
+                return '';
+            }
+
+            const s = String(datetimeLocal);
+            const base = s.replace('T', ' ');
+            return base.length === 16 ? `${base}:00` : base;
+        }
+
+        function validateEditForm() {
+            if (!editAppointment) {
+                showAlert('error', 'No appointment selected.');
+                return false;
+            }
+
+            if (!editSelectedServiceIds.length) {
+                showAlert('error', 'Please select at least one service.');
+                return false;
+            }
+
+            const dtLocal = $('#edit-appointment-date').val();
+            if (!dtLocal) {
+                showAlert('error', 'Please select an appointment date and time.');
+                return false;
+            }
+
+            const dateObj = new Date(dtLocal);
+            if (isNaN(dateObj.getTime()) || dateObj.getTime() <= Date.now()) {
+                showAlert('error', 'Appointment date must be in the future.');
+                return false;
+            }
+
+            return true;
+        }
+
+        function submitEditAppointment() {
+            if (!validateEditForm()) {
+                return;
+            }
+
+            const btn = $('#edit-appointment-save');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Saving...');
+
+            const dtLocal = $('#edit-appointment-date').val();
+            const payload = {
+                vehicle_id: (editAppointment.vehicle && editAppointment.vehicle.id) ? editAppointment.vehicle.id : editAppointment.vehicle_id,
+                appointment_date: toApiDatetime(dtLocal),
+                service_ids: editSelectedServiceIds.slice(),
+                notes: $('#edit-notes').val() || null
+            };
+
+            const url = `${getApiUrl()}/me/appointments/${editAppointment.id}`;
+
+            const req = (window.Api && Api.request)
+                ? Api.request({
+                    url: url,
+                    method: 'PUT',
+                    contentType: 'application/json',
+                    processData: false,
+                    data: JSON.stringify(payload)
+                })
+                : $.ajax({
+                    url: url,
+                    method: 'PUT',
+                    contentType: 'application/json',
+                    processData: false,
+                    data: JSON.stringify(payload),
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                    }
+                });
+
+            req.done(function(res) {
+                if (res && res.success) {
+                    showAlert('success', 'Appointment updated successfully.');
+                    hideEditModal();
+                    loadAppointments();
+                    return;
+                }
+                showAlert('error', (res && res.message) ? res.message : 'Failed to update appointment.');
+            }).fail(function(xhr) {
+                if (xhr && xhr.status === 401) {
+                    return;
+                }
+
+                if (xhr && xhr.status === 404) {
+                    showAlert('error', 'Edit endpoint is not available on the server.');
+                    return;
+                }
+
+                let msg = 'Failed to update appointment.';
+                if (xhr && xhr.responseJSON) {
+                    if (xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    if (xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        if (errors && errors.length) {
+                            msg = errors.join('<br>');
+                        }
+                    }
+                }
+                showAlert('error', msg);
+            }).always(function() {
+                btn.prop('disabled', false).html('<i class="fas fa-save mr-2"></i>Save Changes');
+            });
+        }
+
+        $('#edit-appointment-close').on('click', hideEditModal);
+        $('#edit-appointment-cancel').on('click', hideEditModal);
+        $('#edit-appointment-form').on('submit', function(e) {
+            e.preventDefault();
+            submitEditAppointment();
+        });
 
         function showAlert(type, message) {
             const alertClass = type === 'success'
