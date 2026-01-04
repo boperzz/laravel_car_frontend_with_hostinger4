@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Appointments</title>
+
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/role-guard.js"></script>
+    <script src="../js/logout.js"></script>
+    <script src="../js/appointment-rules.js"></script>
+    <script src="../js/admin-appointments.js"></script>
+</head>
+<body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <a href="../index.html" class="flex items-center">
+                    <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-2 mr-3">
+                        <i class="fas fa-car text-white text-xl"></i>
+                    </div>
+                    <span class="text-xl font-bold">Car Maintenance</span>
+                </a>
+                <div class="flex items-center space-x-3">
+                    <a href="dashboard.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Dashboard</a>
+                    <button onclick="Logout.logout()" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div id="alert-container"></div>
+
+        <div class="bg-white rounded-lg shadow p-8 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold mb-1">Appointments</h1>
+                    <p class="text-slate-600">View appointment details and assign staff (pending + unassigned only).</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-appointments-loading" class="hidden bg-white rounded-lg shadow p-6 mb-6">
+            <div class="flex items-center text-slate-700">
+                <i class="fas fa-spinner fa-spin mr-3"></i> Loading appointments...
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date/Time</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Staff</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-appointments-tbody" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                    <div id="admin-appointments-empty" class="hidden px-6 py-4 text-center text-gray-500">No appointments found.</div>
+                </div>
+            </div>
+
+            <div>
+                <div id="admin-appointment-details" class="hidden bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-eye mr-2"></i>Appointment Details
+                    </h2>
+
+                    <div class="space-y-2 text-sm">
+                        <div><strong>ID:</strong> <span id="detail-id"></span></div>
+                        <div><strong>Status:</strong> <span id="detail-status"></span></div>
+                        <div><strong>Date:</strong> <span id="detail-date"></span></div>
+                        <div><strong>Customer:</strong> <span id="detail-customer"></span></div>
+                        <div><strong>Vehicle:</strong> <span id="detail-vehicle"></span></div>
+                        <div><strong>Staff:</strong> <span id="detail-staff"></span></div>
+                        <div><strong>Total:</strong> <span id="detail-total"></span></div>
+                    </div>
+
+                    <div id="admin-assignment-locked-banner" class="hidden mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <p class="text-yellow-800 text-sm">
+                            <i class="fas fa-lock mr-2"></i>
+                            Staff assignment is locked for appointments that are in progress, completed, cancelled, or already assigned.
+                        </p>
+                    </div>
+
+                    <div id="admin-assign-box" class="mt-6">
+                        <h3 class="font-semibold text-gray-800 mb-2">Assign Staff</h3>
+                        <div class="mb-3">
+                            <select id="staff-select" class="w-full border rounded px-3 py-2"></select>
+                        </div>
+                        <button id="assign-staff-btn" type="button" class="w-full border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                            Assign Staff
+                        </button>
+                    </div>
+                </div>
+
+                <div id="admin-appointment-placeholder" class="bg-white rounded-lg shadow p-6 text-slate-600">
+                    <i class="fas fa-info-circle mr-2"></i>Select an appointment to view details.
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        $(function () {
+            AdminAppointments.init();
+        });
+    </script>
+</body>
+</html>
