@@ -53,29 +53,36 @@
         try {
             var params = new URLSearchParams(global.location.search);
             var status = params.get('status');
-            var date = params.get('date');
             var page = params.get('page');
             var q = params.get('q');
 
-            if (status) global.jQuery('#status').val(status);
-            if (date) global.jQuery('#date').val(date);
+            if (status) {
+                // Map old 'all' to 'most_recent' for backward compatibility
+                if (status === 'all') {
+                    global.jQuery('#status').val('most_recent');
+                } else {
+                    global.jQuery('#status').val(status);
+                }
+            } else {
+                global.jQuery('#status').val('most_recent');
+            }
             if (q) global.jQuery('#search').val(q);
             if (page) CURRENT_PAGE = parseInt(page, 10) || 1;
-        } catch (e) {}
+        } catch (e) {
+            // Default to most recent if hydration fails
+            global.jQuery('#status').val('most_recent');
+        }
     }
 
     function buildAppointmentsUrl() {
         var status = global.jQuery('#status').val();
-        var date = global.jQuery('#date').val();
 
         var url = Api.getBaseUrl() + '/admin/appointments';
         var params = [];
 
-        if (status && status !== 'all') {
+        // Only apply status filter if it's not "most_recent"
+        if (status && status !== 'most_recent' && status !== 'all') {
             params.push('status=' + encodeURIComponent(status));
-        }
-        if (date) {
-            params.push('date=' + encodeURIComponent(date));
         }
         if (CURRENT_PAGE && CURRENT_PAGE > 1) {
             params.push('page=' + encodeURIComponent(CURRENT_PAGE));
@@ -191,19 +198,45 @@
 
     function applySearchFilterAndRender() {
         var q = String(global.jQuery('#search').val() || '').trim().toLowerCase();
+        var appointmentsToFilter = state.appointments || [];
+
         if (!q) {
-            renderAppointmentsTable(state.appointments);
+            renderAppointmentsTable(appointmentsToFilter);
             return;
         }
 
-        var filtered = (state.appointments || []).filter(function (a) {
-            var vehicle = a && a.vehicle ? (a.vehicle.full_name || a.vehicle.license_plate || '') : '';
-            var customer = a && a.user ? (a.user.name || a.user.email || '') : '';
-            var staff = a && a.staff ? (a.staff.name || a.staff.email || '') : '';
+        // Search across multiple fields: customer name, vehicle info, service type, appointment ID
+        var filtered = appointmentsToFilter.filter(function (a) {
+            // Customer name and email
+            var customerName = a && a.user ? (a.user.name || '') : '';
+            var customerEmail = a && a.user ? (a.user.email || '') : '';
+            
+            // Vehicle information
+            var vehicleName = a && a.vehicle ? (a.vehicle.full_name || '') : '';
+            var vehiclePlate = a && a.vehicle ? (a.vehicle.license_plate || '') : '';
+            
+            // Service types
+            var services = (a && a.services && a.services.length) 
+                ? a.services.map(function (s) { return s && s.name ? s.name : ''; }).join(' ') 
+                : '';
+            
+            // Appointment ID
+            var appointmentId = a && a.id ? String(a.id) : '';
+            
+            // Status
             var status = a && a.status ? String(a.status) : '';
-            var services = (a && a.services && a.services.length) ? a.services.map(function (s) { return s && s.name ? s.name : ''; }).join(' ') : '';
-            var date = a && a.appointment_date ? String(a.appointment_date) : '';
-            var haystack = (vehicle + ' ' + customer + ' ' + staff + ' ' + status + ' ' + services + ' ' + date).toLowerCase();
+            
+            // Combine all searchable fields
+            var haystack = (
+                customerName + ' ' + 
+                customerEmail + ' ' + 
+                vehicleName + ' ' + 
+                vehiclePlate + ' ' + 
+                services + ' ' + 
+                appointmentId + ' ' + 
+                status
+            ).toLowerCase();
+            
             return haystack.indexOf(q) !== -1;
         });
 
@@ -230,10 +263,18 @@
         global.jQuery('#pagination').addClass('hidden');
 
         fetchAppointments().done(function () {
+            // Apply search filter on the fetched results
             applySearchFilterAndRender();
             updatePaginationControls();
-        }).fail(function () {
-            showAlert('error', 'Failed to load admin appointments.');
+        }).fail(function (xhr) {
+            var errorMsg = 'Failed to load admin appointments.';
+            try {
+                if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+            } catch (e) {}
+            showAlert('error', errorMsg);
+            renderAppointmentsTable([]);
         }).always(function () {
             setLoading(false);
         });
@@ -371,7 +412,7 @@
                 }
 
                 showAlert('success', 'Staff assigned successfully.');
-                renderAppointmentsTable();
+                applySearchFilterAndRender();
                 renderAppointmentDetails(updated);
                 return;
             }
@@ -396,14 +437,24 @@
     }
 
     function bindEvents() {
-        global.jQuery('#btn-filter').on('click', function () {
-            CURRENT_PAGE = 1;
-            loadAppointments();
+        // Status filter change triggers API call
+        global.jQuery('#status').on('change', function () {
+            var status = global.jQuery(this).val();
+            
+            // If "most_recent" is selected, reset to show all latest appointments
+            if (status === 'most_recent') {
+                CURRENT_PAGE = 1;
+                loadAppointments();
+            } else {
+                // For other status filters, trigger API call with that status
+                CURRENT_PAGE = 1;
+                loadAppointments();
+            }
         });
 
+        // Clear button resets all filters and shows most recent
         global.jQuery('#btn-clear').on('click', function () {
-            global.jQuery('#status').val('all');
-            global.jQuery('#date').val('');
+            global.jQuery('#status').val('most_recent');
             global.jQuery('#search').val('');
             CURRENT_PAGE = 1;
             loadAppointments();
@@ -421,6 +472,7 @@
             loadAppointments();
         });
 
+        // Search filters client-side (on already loaded API results)
         global.jQuery('#search').on('input', function () {
             if (SEARCH_DEBOUNCE_TIMER) {
                 clearTimeout(SEARCH_DEBOUNCE_TIMER);
@@ -466,6 +518,11 @@
         }
 
         bindEvents();
+
+        // Initialize default filter to "most_recent" if not set from query
+        if (!global.jQuery('#status').val()) {
+            global.jQuery('#status').val('most_recent');
+        }
 
         hydrateFiltersFromQuery();
 
