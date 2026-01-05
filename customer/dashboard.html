@@ -15,21 +15,55 @@
     <script src="../js/auth.js"></script>
     <script src="../js/role-guard.js"></script>
     <script src="../js/logout.js"></script>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
-    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50" x-data="{ mobileOpen: false }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
-                <a href="../index.html" class="flex items-center">
-                    <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-2 mr-3">
-                        <i class="fas fa-car text-white text-xl"></i>
+                <div class="flex items-center">
+                    <a href="../index.html" class="flex items-center group">
+                        <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-2 mr-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-car text-white text-xl"></i>
+                        </div>
+                        <span class="text-xl font-bold">Car Maintenance</span>
+                    </a>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <button type="button" class="sm:hidden inline-flex items-center justify-center p-2 rounded-lg text-slate-700 hover:bg-white/60 focus:outline-none" @click="mobileOpen = !mobileOpen" aria-label="Toggle menu">
+                        <i class="fas" :class="mobileOpen ? 'fa-times' : 'fa-bars'"></i>
+                    </button>
+
+                    <div class="hidden sm:flex items-center space-x-3">
+                        <a href="../booking.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Book Appointment</a>
+                        <a href="../profile.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Profile</a>
+                        <button onclick="Logout.logout()" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Logout</button>
                     </div>
-                    <span class="text-xl font-bold">Car Maintenance</span>
-                </a>
-                <div class="flex items-center space-x-3">
-                    <a href="../booking.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Book Appointment</a>
-                    <a href="../profile.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Profile</a>
-                    <button onclick="Logout.logout()" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">Logout</button>
+                </div>
+            </div>
+
+            <div class="sm:hidden" x-show="mobileOpen" x-transition>
+                <div class="pt-2 pb-3 space-y-1">
+                    <a href="../booking.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-calendar-plus mr-2"></i>Book Appointment
+                    </a>
+                    <a href="../vehicles.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-car mr-2"></i>My Vehicles
+                    </a>
+                    <a href="../appointments.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-calendar mr-2"></i>Appointments
+                    </a>
+                </div>
+
+                <div class="pt-2 pb-3 border-t border-slate-200/60">
+                    <a href="../profile.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-user-edit mr-2"></i>Profile
+                    </a>
+                    <button type="button" onclick="Logout.logout()" class="w-full text-left px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Log Out
+                    </button>
                 </div>
             </div>
         </div>
