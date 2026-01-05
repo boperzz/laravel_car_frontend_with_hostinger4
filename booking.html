@@ -97,43 +97,51 @@
                         </div>
                     </div>
 
-                    <div class="hidden sm:flex sm:items-center sm:ms-6">
-                        <div class="flex items-center space-x-3 nav-actions">
-                            <a href="login.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
-                                <i class="fas fa-sign-in-alt mr-2"></i>Login
-                            </a>
-                            <a href="register.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
-                                <i class="fas fa-user-plus mr-2"></i>Register
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Mobile menu button -->
-                    <div class="flex items-center sm:hidden">
-                        <button type="button" @click="mobileOpen = !mobileOpen" class="inline-flex items-center justify-center p-2 rounded-lg text-slate-700 hover:bg-white/70 focus:outline-none transition">
-                            <span class="sr-only">Open main menu</span>
+                    <div class="flex items-center gap-2">
+                        <button type="button" class="sm:hidden inline-flex items-center justify-center p-2 rounded-lg text-slate-700 hover:bg-white/60 focus:outline-none" @click="mobileOpen = !mobileOpen" aria-label="Toggle menu">
                             <i class="fas" :class="mobileOpen ? 'fa-times' : 'fa-bars'"></i>
                         </button>
+
+                        <div class="hidden sm:flex sm:items-center sm:ms-6">
+                            <div class="flex items-center space-x-3 nav-actions">
+                                <a href="login.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                                    <i class="fas fa-sign-in-alt mr-2"></i>Login
+                                </a>
+                                <a href="register.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                                    <i class="fas fa-user-plus mr-2"></i>Register
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Mobile menu dropdown -->
-            <div class="sm:hidden" x-show="mobileOpen" x-transition @click.away="mobileOpen = false">
-                <div class="px-4 pt-2 pb-4 space-y-1 bg-white/90 backdrop-blur-md border-t border-slate-200/50">
-                    <a href="booking.html" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-900 bg-white/60">
+            <div class="sm:hidden" x-show="mobileOpen" x-transition>
+                <div class="pt-2 pb-3 space-y-1">
+                    <a href="index.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                    </a>
+                    <a href="vehicles.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-car mr-2"></i>My Vehicles
+                    </a>
+                    <a href="appointments.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-calendar mr-2"></i>Appointments
+                    </a>
+                    <a href="booking.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
                         <i class="fas fa-calendar-plus mr-2"></i>Book Appointment
                     </a>
-                    <div class="pt-2 border-t border-slate-200/70">
-                        <div class="flex flex-col space-y-2 nav-actions">
-                            <a href="login.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
-                                <i class="fas fa-sign-in-alt mr-2"></i>Login
-                            </a>
-                            <a href="register.html" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
-                                <i class="fas fa-user-plus mr-2"></i>Register
-                            </a>
-                        </div>
-                    </div>
+                </div>
+
+                <div class="pt-2 pb-3 border-t border-slate-200/60">
+                    <a href="profile.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-user-edit mr-2"></i>Profile
+                    </a>
+                    <a href="login.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Login
+                    </a>
+                    <a href="register.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-user-plus mr-2"></i>Register
+                    </a>
                 </div>
             </div>
         </nav>
