@@ -131,35 +131,34 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="sm:hidden" x-show="mobileOpen" x-transition>
-                <div class="pt-2 pb-3 space-y-1">
-                    <a href="index.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
-                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-                    </a>
-                    <a href="vehicles.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
-                        <i class="fas fa-car mr-2"></i>My Vehicles
-                    </a>
-                    <a href="appointments.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
-                        <i class="fas fa-calendar mr-2"></i>Appointments
-                    </a>
-                    <a href="booking.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
-                        <i class="fas fa-calendar-plus mr-2"></i>Book Appointment
-                    </a>
-                </div>
+                <div class="sm:hidden" x-show="mobileOpen" x-transition>
+                    <div class="pt-2 pb-3 space-y-1">
+                        <a href="index.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                            <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                        </a>
+                        <a href="vehicles.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                            <i class="fas fa-car mr-2"></i>My Vehicles
+                        </a>
+                        <a href="appointments.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                            <i class="fas fa-calendar mr-2"></i>Appointments
+                        </a>
+                        <a href="booking.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                            <i class="fas fa-calendar-plus mr-2"></i>Book Appointment
+                        </a>
+                    </div>
 
-                <div class="pt-2 pb-3 border-t border-slate-200/60">
-                    <a href="profile.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
-                        <i class="fas fa-user-edit mr-2"></i>Profile
-                    </a>
-                    <a href="login.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Login
-                    </a>
-                    <a href="register.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
-                        <i class="fas fa-user-plus mr-2"></i>Register
-                    </a>
-                </div>
+                    <div class="pt-2 pb-3 border-t border-slate-200/60">
+                        <a href="profile.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                            <i class="fas fa-user-edit mr-2"></i>Profile
+                        </a>
+                        <a href="login.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Login
+                        </a>
+                        <a href="register.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                            <i class="fas fa-user-plus mr-2"></i>Register
+                        </a>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -167,19 +166,15 @@
         <!-- Flash Messages / Alert Container -->
         <div id="alert-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4"></div>
 
-        <!-- Page Heading -->
-        <header class="bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-200">
-            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-                </h2>
-            </div>
-        </header>
-
         <!-- Page Content -->
-        <main class="py-8">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="py-6">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold mb-1"><i class="fas fa-tachometer-alt mr-2"></i>Dashboard</h1>
+                </div>
+            </div>
+
+            <div>
                     <!-- Stats Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                         <div class="bg-white rounded-lg shadow p-6">
@@ -286,7 +281,6 @@
                             </a>
                         </div>
                     </div>
-                </div>
             </div>
         </main>
     </div>
