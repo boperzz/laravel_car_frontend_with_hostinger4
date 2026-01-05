@@ -3,8 +3,12 @@
         appointments: [],
         staff: [],
         selectedAppointment: null,
-        loading: false
+        loading: false,
+        pagination: null
     };
+
+    var CURRENT_PAGE = 1;
+    var SEARCH_DEBOUNCE_TIMER = null;
 
     function escapeHtml(text) {
         if (text === null || text === undefined) {
@@ -45,6 +49,45 @@
         global.jQuery('#admin-appointments-loading').toggleClass('hidden', !isLoading);
     }
 
+    function hydrateFiltersFromQuery() {
+        try {
+            var params = new URLSearchParams(global.location.search);
+            var status = params.get('status');
+            var date = params.get('date');
+            var page = params.get('page');
+            var q = params.get('q');
+
+            if (status) global.jQuery('#status').val(status);
+            if (date) global.jQuery('#date').val(date);
+            if (q) global.jQuery('#search').val(q);
+            if (page) CURRENT_PAGE = parseInt(page, 10) || 1;
+        } catch (e) {}
+    }
+
+    function buildAppointmentsUrl() {
+        var status = global.jQuery('#status').val();
+        var date = global.jQuery('#date').val();
+
+        var url = Api.getBaseUrl() + '/admin/appointments';
+        var params = [];
+
+        if (status && status !== 'all') {
+            params.push('status=' + encodeURIComponent(status));
+        }
+        if (date) {
+            params.push('date=' + encodeURIComponent(date));
+        }
+        if (CURRENT_PAGE && CURRENT_PAGE > 1) {
+            params.push('page=' + encodeURIComponent(CURRENT_PAGE));
+        }
+
+        if (params.length) {
+            url += '?' + params.join('&');
+        }
+
+        return url;
+    }
+
     function showAlert(type, message) {
         var alertClass = type === 'success'
             ? 'bg-green-50 border-l-4 border-green-500 text-green-700'
@@ -64,12 +107,14 @@
 
     function fetchAppointments() {
         return Api.request({
-            url: Api.getBaseUrl() + '/admin/appointments',
+            url: buildAppointmentsUrl(),
             method: 'GET',
             headers: { 'Accept': 'application/json' }
         }).then(function (res) {
             var items = res && res.data && res.data.appointments;
+            var pagination = res && res.data && res.data.pagination;
             state.appointments = Array.isArray(items) ? items : [];
+            state.pagination = pagination || null;
             return state.appointments;
         });
     }
@@ -97,29 +142,37 @@
         });
     }
 
-    function renderAppointmentsTable() {
+    function renderAppointmentsTable(items) {
         var $tbody = global.jQuery('#admin-appointments-tbody');
         $tbody.empty();
 
-        if (!state.appointments.length) {
+        var list = Array.isArray(items) ? items : (Array.isArray(state.appointments) ? state.appointments : []);
+
+        if (!list.length) {
             global.jQuery('#admin-appointments-empty').removeClass('hidden');
             return;
         }
 
         global.jQuery('#admin-appointments-empty').addClass('hidden');
 
-        state.appointments.forEach(function (a) {
+        list.forEach(function (a) {
             var status = AppointmentRules.normalizeStatus(a.status);
             var statusColor = AppointmentRules.getStatusBadgeColor(status);
 
             var customer = a.user && a.user.name ? a.user.name : '-';
             var vehicle = a.vehicle && a.vehicle.full_name ? a.vehicle.full_name : '-';
             var staff = a.staff && a.staff.name ? a.staff.name : 'Unassigned';
+            var servicesText = (a.services || []).map(function (s) {
+                return s && s.name ? s.name : '';
+            }).filter(function (x) {
+                return !!x;
+            }).join(', ');
 
             var row = '<tr>'
                 + '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(formatDate(a.appointment_date)) + '</td>'
                 + '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(customer) + '</td>'
                 + '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(vehicle) + '</td>'
+                + '<td class="px-6 py-4 text-sm">' + escapeHtml(servicesText || '-') + '</td>'
                 + '<td class="px-6 py-4 whitespace-nowrap">'
                 + '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-' + statusColor + '-100 text-' + statusColor + '-800">'
                 + escapeHtml(status ? (status.charAt(0).toUpperCase() + status.slice(1)) : '-')
@@ -133,6 +186,56 @@
                 + '</tr>';
 
             $tbody.append(row);
+        });
+    }
+
+    function applySearchFilterAndRender() {
+        var q = String(global.jQuery('#search').val() || '').trim().toLowerCase();
+        if (!q) {
+            renderAppointmentsTable(state.appointments);
+            return;
+        }
+
+        var filtered = (state.appointments || []).filter(function (a) {
+            var vehicle = a && a.vehicle ? (a.vehicle.full_name || a.vehicle.license_plate || '') : '';
+            var customer = a && a.user ? (a.user.name || a.user.email || '') : '';
+            var staff = a && a.staff ? (a.staff.name || a.staff.email || '') : '';
+            var status = a && a.status ? String(a.status) : '';
+            var services = (a && a.services && a.services.length) ? a.services.map(function (s) { return s && s.name ? s.name : ''; }).join(' ') : '';
+            var date = a && a.appointment_date ? String(a.appointment_date) : '';
+            var haystack = (vehicle + ' ' + customer + ' ' + staff + ' ' + status + ' ' + services + ' ' + date).toLowerCase();
+            return haystack.indexOf(q) !== -1;
+        });
+
+        renderAppointmentsTable(filtered);
+    }
+
+    function updatePaginationControls() {
+        var pagination = state.pagination;
+        if (!pagination) {
+            global.jQuery('#pagination').addClass('hidden');
+            return;
+        }
+
+        global.jQuery('#pagination').removeClass('hidden');
+        global.jQuery('#page-info').text('Page ' + pagination.current_page + ' of ' + pagination.last_page);
+        CURRENT_PAGE = pagination.current_page;
+        global.jQuery('#btn-prev').prop('disabled', pagination.current_page <= 1);
+        global.jQuery('#btn-next').prop('disabled', pagination.current_page >= pagination.last_page);
+    }
+
+    function loadAppointments() {
+        setLoading(true);
+        global.jQuery('#admin-appointments-empty').addClass('hidden');
+        global.jQuery('#pagination').addClass('hidden');
+
+        fetchAppointments().done(function () {
+            applySearchFilterAndRender();
+            updatePaginationControls();
+        }).fail(function () {
+            showAlert('error', 'Failed to load admin appointments.');
+        }).always(function () {
+            setLoading(false);
         });
     }
 
@@ -293,6 +396,40 @@
     }
 
     function bindEvents() {
+        global.jQuery('#btn-filter').on('click', function () {
+            CURRENT_PAGE = 1;
+            loadAppointments();
+        });
+
+        global.jQuery('#btn-clear').on('click', function () {
+            global.jQuery('#status').val('all');
+            global.jQuery('#date').val('');
+            global.jQuery('#search').val('');
+            CURRENT_PAGE = 1;
+            loadAppointments();
+        });
+
+        global.jQuery('#btn-prev').on('click', function () {
+            if (CURRENT_PAGE > 1) {
+                CURRENT_PAGE -= 1;
+                loadAppointments();
+            }
+        });
+
+        global.jQuery('#btn-next').on('click', function () {
+            CURRENT_PAGE += 1;
+            loadAppointments();
+        });
+
+        global.jQuery('#search').on('input', function () {
+            if (SEARCH_DEBOUNCE_TIMER) {
+                clearTimeout(SEARCH_DEBOUNCE_TIMER);
+            }
+            SEARCH_DEBOUNCE_TIMER = setTimeout(function () {
+                applySearchFilterAndRender();
+            }, 200);
+        });
+
         global.jQuery(document).on('click', 'button[data-action="view"]', function () {
             var id = global.jQuery(this).data('id');
             setLoading(true);
@@ -309,7 +446,7 @@
                     }
                 }
 
-                renderAppointmentsTable();
+                applySearchFilterAndRender();
                 renderAppointmentDetails(fresh);
             }).fail(function () {
                 showAlert('error', 'Failed to load appointment details.');
@@ -330,17 +467,13 @@
 
         bindEvents();
 
+        hydrateFiltersFromQuery();
+
         setLoading(true);
-        global.jQuery.when(fetchStaff(), fetchAppointments())
-            .done(function () {
-                renderAppointmentsTable();
-            })
-            .fail(function () {
-                showAlert('error', 'Failed to load admin appointments.');
-            })
-            .always(function () {
-                setLoading(false);
-            });
+        fetchStaff().always(function () {
+            setLoading(false);
+            loadAppointments();
+        });
     }
 
     global.AdminAppointments = {
