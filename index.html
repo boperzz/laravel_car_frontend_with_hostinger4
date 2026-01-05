@@ -374,8 +374,45 @@
                 });
             });
 
+            loadUserInfo();
             loadDashboardData();
         });
+
+        function loadUserInfo() {
+            // Try to get user from localStorage first
+            var currentUser = Auth.getUser();
+            
+            if (currentUser) {
+                // Update username display
+                var displayName = currentUser.name || currentUser.username || 'User';
+                $('#user-name').text(displayName);
+            } else {
+                // If not in localStorage, fetch from API
+                $.ajax({
+                    url: `${getApiUrl()}/me`,
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                    },
+                    success: function(res) {
+                        const user = res && res.data && res.data.user;
+                        if (user) {
+                            localStorage.setItem('currentUser', JSON.stringify(user));
+                            var displayName = user.name || user.username || 'User';
+                            $('#user-name').text(displayName);
+                        }
+                    },
+                    error: function(xhr) {
+                        if (xhr && xhr.status === 401) {
+                            localStorage.removeItem('authToken');
+                            localStorage.removeItem('currentUser');
+                            window.location.href = 'login.html';
+                        }
+                    }
+                });
+            }
+        }
 
         function loadDashboardData() {
             const headers = {
