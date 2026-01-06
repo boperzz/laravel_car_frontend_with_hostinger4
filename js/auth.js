@@ -115,6 +115,18 @@
                 'Accept': 'application/json'
             }
         }).then(function (res) {
+            // Registration successful - check if we have success response
+            if (res && res.success) {
+                // Note: Registration doesn't return a token because email verification is required
+                // The user data is returned but no token until email is verified
+                var user = res && res.data && res.data.user;
+                
+                // Don't set auth here - user needs to verify email first
+                // Just return the success response
+                return res;
+            }
+
+            // If response doesn't indicate success, treat as failure
             var token = res && res.data && res.data.token;
             var user = res && res.data && res.data.user;
 
