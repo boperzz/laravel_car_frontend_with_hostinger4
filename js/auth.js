@@ -85,11 +85,16 @@
                 'Accept': 'application/json'
             }
         }).then(function (res) {
+            if (!res || !res.success) {
+                var errorMsg = (res && res.message) ? res.message : 'Login failed. Please check your credentials and try again.';
+                return global.jQuery.Deferred().reject({ message: errorMsg, response: res });
+            }
+
             var token = res && res.data && res.data.token;
             var user = res && res.data && res.data.user;
 
             if (!token || !user) {
-                return global.jQuery.Deferred().reject({ message: 'Login failed' });
+                return global.jQuery.Deferred().reject({ message: 'Login failed. Invalid response from server.' });
             }
 
             setAuth(token, user);
@@ -122,6 +127,18 @@
         });
     }
 
+    function resendVerification(identifier) {
+        return Api.request({
+            url: Api.getBaseUrl() + '/auth/resend-verification',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ email: identifier }),
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+    }
+
     global.Auth = {
         getToken: getToken,
         getUser: getUser,
@@ -132,6 +149,7 @@
         normalizeRole: normalizeRole,
         redirectToDashboard: redirectToDashboard,
         login: login,
-        register: register
+        register: register,
+        resendVerification: resendVerification
     };
 })(window);
