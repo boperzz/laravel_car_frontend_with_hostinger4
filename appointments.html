@@ -340,7 +340,7 @@
 
         let allAppointments = [];
         let currentSearch = '';
-        let currentStatusFilter = 'recent';
+        let currentStatusFilter = 'all';
         let searchDebounceTimer = null;
 
         function loadAppointments() {
@@ -388,11 +388,11 @@
 
         function applyAppointmentFilters() {
             const q = String(currentSearch || '').trim().toLowerCase();
-            const status = String(currentStatusFilter || 'recent').toLowerCase();
+            const status = String(currentStatusFilter || 'all').toLowerCase();
 
             let list = Array.isArray(allAppointments) ? allAppointments.slice() : [];
 
-            if (status !== 'recent') {
+            if (status !== 'all') {
                 list = list.filter(function(a) {
                     return String(a && a.status ? a.status : '').toLowerCase() === status;
                 });
@@ -440,9 +440,9 @@
 
             $('#appointments-clear-filters').off('click').on('click', function() {
                 currentSearch = '';
-                currentStatusFilter = 'recent';
+                currentStatusFilter = 'all';
                 $('#appointments-search').val('');
-                $('#appointments-status-filter').val('recent');
+                $('#appointments-status-filter').val('all');
                 applyAppointmentFilters();
             });
 
@@ -466,7 +466,7 @@
                         <div class="w-full md:w-64">
                             <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Status</label>
                             <select id="appointments-status-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="recent">Most recent</option>
+                                <option value="all">All</option>
                                 <option value="pending">Pending</option>
                                 <option value="in_progress">In progress</option>
                                 <option value="completed">Completed</option>

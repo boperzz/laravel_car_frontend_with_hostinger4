@@ -67,14 +67,10 @@
             var q = params.get('q');
 
             if (status) {
-                // Map old 'all' to 'most_recent' for backward compatibility
-                if (status === 'all') {
-                    global.jQuery('#status').val('most_recent');
-                } else {
-                    global.jQuery('#status').val(status);
-                }
+                global.jQuery('#status').val(status);
             } else {
-                global.jQuery('#status').val('most_recent');
+                // Default to "all" when no status is specified
+                global.jQuery('#status').val('all');
             }
             if (q) global.jQuery('#search').val(q);
             if (page) CURRENT_PAGE = parseInt(page, 10) || 1;
@@ -90,8 +86,8 @@
         var url = Api.getBaseUrl() + '/admin/appointments';
         var params = [];
 
-        // Only apply status filter if it's not "most_recent"
-        if (status && status !== 'most_recent' && status !== 'all') {
+        // Only apply status filter if it's not "all"
+        if (status && status !== 'all') {
             params.push('status=' + encodeURIComponent(status));
         }
         if (CURRENT_PAGE && CURRENT_PAGE > 1) {
@@ -447,24 +443,15 @@
     }
 
     function bindEvents() {
-        // Status filter change triggers API call
         global.jQuery('#status').on('change', function () {
             var status = global.jQuery(this).val();
-            
-            // If "most_recent" is selected, reset to show all latest appointments
-            if (status === 'most_recent') {
-                CURRENT_PAGE = 1;
-                loadAppointments();
-            } else {
-                // For other status filters, trigger API call with that status
-                CURRENT_PAGE = 1;
-                loadAppointments();
-            }
+            CURRENT_PAGE = 1;
+            loadAppointments();
         });
 
         // Clear button resets all filters and shows most recent
         global.jQuery('#btn-clear').on('click', function () {
-            global.jQuery('#status').val('most_recent');
+            global.jQuery('#status').val('all');
             global.jQuery('#search').val('');
             CURRENT_PAGE = 1;
             loadAppointments();
@@ -529,9 +516,8 @@
 
         bindEvents();
 
-        // Initialize default filter to "most_recent" if not set from query
         if (!global.jQuery('#status').val()) {
-            global.jQuery('#status').val('most_recent');
+            global.jQuery('#status').val('all');
         }
 
         hydrateFiltersFromQuery();
