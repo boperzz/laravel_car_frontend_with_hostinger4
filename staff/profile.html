@@ -250,6 +250,12 @@
     </div>
 
     <script>
+        function getDefaultProfileImage(user) {
+            var name = (user && (user.name || user.username)) || 'User';
+            var encoded = encodeURIComponent(name);
+            return 'https://ui-avatars.com/api/?name=' + encoded + '&background=4f46e5&color=ffffff&size=128';
+        }
+
         $(document).ready(function() {
             if (!RoleGuard.requireRole(['staff'])) {
                 return;
@@ -285,10 +291,9 @@
 
                 $('#user-name').text(user.name || user.username || user.email || user.id || 'User');
 
-                if (user.profile_picture) {
-                    $('#profile-img').attr('src', user.profile_picture).removeClass('hidden');
-                    $('#no-profile-img').addClass('hidden');
-                }
+                var avatarUrl = user.profile_picture || getDefaultProfileImage(user);
+                $('#profile-img').attr('src', avatarUrl).removeClass('hidden');
+                $('#no-profile-img').addClass('hidden');
             }).fail(function() {
                 showAlert('error', 'Failed to load profile.');
             });
@@ -312,10 +317,9 @@
                     localStorage.setItem('currentUser', JSON.stringify(user));
                     $('#user-name').text(user.name || user.username || user.email || user.id || 'User');
 
-                    if (user.profile_picture) {
-                        $('#profile-img').attr('src', user.profile_picture).removeClass('hidden');
-                        $('#no-profile-img').addClass('hidden');
-                    }
+                    var avatarUrl = user.profile_picture || getDefaultProfileImage(user);
+                    $('#profile-img').attr('src', avatarUrl).removeClass('hidden');
+                    $('#no-profile-img').addClass('hidden');
                 }
 
                 $('#profile-saved').removeClass('hidden');

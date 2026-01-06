@@ -313,6 +313,12 @@
             $('#password-form').on('submit', handlePasswordUpdate);
         });
 
+        function getDefaultProfileImage(user) {
+            const name = (user && (user.name || user.username)) || 'User';
+            const encoded = encodeURIComponent(name);
+            return `https://ui-avatars.com/api/?name=${encoded}&background=4f46e5&color=ffffff&size=128`;
+        }
+
         function loadUserProfile() {
             $.ajax({
                 url: `${getApiUrl()}/me`,
@@ -337,10 +343,9 @@
                     $('#email').val(user.email || '');
                     $('#user-name').text(user.name || user.username || 'User');
 
-                    if (user.profile_picture) {
-                        $('#profile-img').attr('src', user.profile_picture).removeClass('hidden');
-                        $('#no-profile-img').addClass('hidden');
-                    }
+                    const avatarUrl = user.profile_picture || getDefaultProfileImage(user);
+                    $('#profile-img').attr('src', avatarUrl).removeClass('hidden');
+                    $('#no-profile-img').addClass('hidden');
                 },
                 error: function(xhr) {
                     if (xhr && xhr.status === 401) {
@@ -377,10 +382,9 @@
                         localStorage.setItem('currentUser', JSON.stringify(user));
                         $('#user-name').text(user.name || user.username || 'User');
 
-                        if (user.profile_picture) {
-                            $('#profile-img').attr('src', user.profile_picture).removeClass('hidden');
-                            $('#no-profile-img').addClass('hidden');
-                        }
+                        const avatarUrl = user.profile_picture || getDefaultProfileImage(user);
+                        $('#profile-img').attr('src', avatarUrl).removeClass('hidden');
+                        $('#no-profile-img').addClass('hidden');
                     }
 
                     $('#profile-saved').removeClass('hidden');
