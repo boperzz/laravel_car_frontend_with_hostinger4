@@ -151,6 +151,18 @@
         });
     }
 
+    function verifyEmail(token) {
+        return Api.request({
+            url: Api.getBaseUrl() + '/auth/verify-email',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ token: token }),
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+    }
+
     global.Auth = {
         getToken: getToken,
         getUser: getUser,
@@ -162,6 +174,7 @@
         redirectToDashboard: redirectToDashboard,
         login: login,
         register: register,
-        resendVerification: resendVerification
+        resendVerification: resendVerification,
+        verifyEmail: verifyEmail
     };
 })(window);
