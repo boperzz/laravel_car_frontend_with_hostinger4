@@ -23,14 +23,24 @@
     }
 
     function formatDate(iso) {
+        if (global.DateUtils && typeof global.DateUtils.formatDateTime === 'function') {
+            return global.DateUtils.formatDateTime(iso);
+        }
+
+        // Fallback if DateUtils is not loaded
         if (!iso) {
-            return '-';
+            return '—';
         }
         var d = new Date(iso);
         if (isNaN(d.getTime())) {
-            return '-';
+            return '—';
         }
-        return d.toLocaleString();
+        return d.getFullYear() + '-' +
+            String(d.getMonth() + 1).padStart(2, '0') + '-' +
+            String(d.getDate()).padStart(2, '0') + ' ' +
+            String(d.getHours()).padStart(2, '0') + ':' +
+            String(d.getMinutes()).padStart(2, '0') + ':' +
+            String(d.getSeconds()).padStart(2, '0');
     }
 
     function formatMoney(value) {

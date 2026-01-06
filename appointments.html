@@ -32,6 +32,7 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 
     <script src="js/api.js"></script>
+    <script src="js/date-utils.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/role-guard.js"></script>
     <script src="js/logout.js"></script>
@@ -515,7 +516,7 @@
 
             appointments.forEach(function(a) {
                 const vehicle = a.vehicle ? `${a.vehicle.make || ''} ${a.vehicle.model || ''} ${a.vehicle.year || ''}`.trim() : '—';
-                const date = a.appointment_date ? a.appointment_date : '—';
+                const date = (window.DateUtils && DateUtils.formatDateTime) ? DateUtils.formatDateTime(a.appointment_date) : (a.appointment_date || '—');
                 const services = formatServices(a.services);
                 const staff = a.staff ? (a.staff.name || a.staff.username || '—') : '—';
                 const status = a.status || '—';
@@ -588,7 +589,7 @@
             const vehicle = a.vehicle ? `${a.vehicle.make || ''} ${a.vehicle.model || ''} ${a.vehicle.year || ''}`.trim() : '—';
             const services = formatServices(a.services);
             const staff = a.staff ? (a.staff.name || a.staff.username || '—') : '—';
-            const date = a.appointment_date ? a.appointment_date : '—';
+            const date = (window.DateUtils && DateUtils.formatDateTime) ? DateUtils.formatDateTime(a.appointment_date) : (a.appointment_date || '—');
             const status = a.status || '—';
             const total = (a.total_price !== null && a.total_price !== undefined) ? `$${parseFloat(a.total_price).toFixed(2)}` : '—';
 

@@ -32,6 +32,7 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 
     <script src="js/api.js"></script>
+    <script src="js/date-utils.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/role-guard.js"></script>
     <script src="js/logout.js"></script>
@@ -492,10 +493,11 @@
                     let html = '<div class="space-y-3">';
                     recent.forEach(function(a) {
                         const vehicle = a.vehicle ? `${a.vehicle.make || ''} ${a.vehicle.model || ''}`.trim() : '—';
+                        const dt = (window.DateUtils && DateUtils.formatDateTime) ? DateUtils.formatDateTime(a.appointment_date) : (a.appointment_date || '—');
                         html += `
                             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                 <div>
-                                    <p class="font-semibold text-gray-900">${a.appointment_date || '—'}</p>
+                                    <p class="font-semibold text-gray-900">${dt}</p>
                                     <p class="text-sm text-gray-600">${vehicle} • ${a.status || '—'}</p>
                                 </div>
                                 <a href="appointments.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View</a>

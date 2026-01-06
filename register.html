@@ -31,6 +31,7 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 
     <script src="js/api.js"></script>
+    <script src="js/date-utils.js"></script>
     <script src="js/auth.js"></script>
     
     <style>
@@ -164,6 +165,23 @@
                             placeholder="Enter your email"
                         >
                         <p id="email-error" class="mt-1 text-sm text-red-600 hidden"></p>
+                    </div>
+
+                    <!-- Profile Picture -->
+                    <div>
+                        <label for="profile_picture" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-image mr-2 text-gray-400"></i>Profile Picture <span class="text-gray-400 text-xs">(Optional)</span>
+                        </label>
+                        <input 
+                            id="profile_picture" 
+                            type="file" 
+                            name="profile_picture" 
+                            accept="image/*"
+                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-2 file:border-black file:text-black file:bg-transparent file:hover:bg-black file:hover:text-white file:cursor-pointer file:transition file:font-semibold border-2 border-black rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                        >
+                        <p class="mt-2 text-xs text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>Max file size: 2MB. Accepted formats: JPG, PNG, GIF
+                        </p>
                     </div>
 
                     <!-- Password -->
@@ -322,6 +340,22 @@
             const form = document.getElementById('register-form');
             const formData = new FormData(form);
 
+            // Validate password confirmation client-side first
+            const password = $('#password').val();
+            const passwordConfirmation = $('#password_confirmation').val();
+            
+            if (password !== passwordConfirmation) {
+                $('#password_confirmation-error').removeClass('hidden').text('Password confirmation does not match.');
+                showAlert('error', 'Please fix the errors below and try again.');
+                return;
+            }
+
+            if (password && password.length < 8) {
+                $('#password-error').removeClass('hidden').text('Password must be at least 8 characters.');
+                showAlert('error', 'Please fix the errors below and try again.');
+                return;
+            }
+
             Auth.register(formData)
                 .done(function(res) {
                     showAlert('success', (res && res.message) ? res.message : 'Registration successful. Please verify your email before logging in.');
@@ -331,11 +365,27 @@
                 })
                 .fail(function(xhr) {
                     const json = xhr && xhr.responseJSON;
+                    
                     if (xhr && xhr.status === 422) {
                         if (json && json.errors) {
                             setFieldErrors(json.errors);
+                            
+                            // Build a detailed error message
+                            let errorMessages = [];
+                            Object.keys(json.errors).forEach(function(key) {
+                                if (json.errors[key] && json.errors[key].length) {
+                                    errorMessages.push(json.errors[key][0]);
+                                }
+                            });
+                            
+                            if (errorMessages.length > 0) {
+                                showAlert('error', errorMessages.join(' '));
+                            } else {
+                                showAlert('error', (json && json.message) ? json.message : 'Validation failed. Please check the form and try again.');
+                            }
+                        } else {
+                            showAlert('error', (json && json.message) ? json.message : 'Validation failed. Please check the form and try again.');
                         }
-                        showAlert('error', (json && json.message) ? json.message : 'Validation failed.');
                         return;
                     }
 
@@ -345,5 +395,4 @@
     </script>
 </body>
 </html>
-
 
