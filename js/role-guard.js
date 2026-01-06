@@ -19,11 +19,17 @@
 
         var required = (requiredRoles || []).map(normalizeRole);
 
+        // Super admin has access to everything
+        if (role === 'super_admin') {
+            return true;
+        }
+
+        // Admin has access to admin routes
         if (role === 'admin') {
             return true;
         }
 
-        if (required.indexOf('admin') !== -1) {
+        if (required.indexOf('admin') !== -1 || required.indexOf('super_admin') !== -1) {
             return false;
         }
 

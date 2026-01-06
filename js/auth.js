@@ -61,7 +61,7 @@
 
     function dashboardPathForRole(role) {
         var r = normalizeRole(role);
-        if (r === 'admin') {
+        if (r === 'super_admin' || r === 'admin') {
             return 'admin/dashboard.html';
         }
         if (r === 'staff') {

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/role-guard.js"></script>
+    <script src="../../js/logout.js"></script>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50" x-data="{ mobileOpen: false }">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <div class="shrink-0 flex items-center">
+                        <a href="../dashboard.html" class="flex items-center group">
+                            <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-2 mr-3 group-hover:scale-110 transition-transform">
+                                <i class="fas fa-car text-white text-xl"></i>
+                            </div>
+                            <span class="text-xl font-bold">Car Maintenance</span>
+                        </a>
+                    </div>
+
+                    <div class="hidden space-x-2 sm:-my-px sm:ms-10 sm:flex">
+                        <a href="../dashboard.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition">
+                            <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+                        </a>
+                        <a href="../staff/index.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition">
+                            <i class="fas fa-users mr-2"></i> Staff
+                        </a>
+                        <a href="index.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-indigo-500 text-sm font-medium leading-5 text-indigo-700 focus:outline-none focus:text-indigo-700 focus:border-indigo-300 transition">
+                            <i class="fas fa-user-shield mr-2"></i> Users
+                        </a>
+                        <a href="../services/index.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition">
+                            <i class="fas fa-tools mr-2"></i> Services
+                        </a>
+                        <a href="../appointments.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition">
+                            <i class="fas fa-calendar mr-2"></i> Appointments
+                        </a>
+                        <a href="../schedule/index.html" class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition">
+                            <i class="fas fa-clock mr-2"></i> Schedule
+                        </a>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button type="button" class="sm:hidden inline-flex items-center justify-center p-2 rounded-lg text-slate-700 hover:bg-white/60 focus:outline-none" @click="mobileOpen = !mobileOpen" aria-label="Toggle menu">
+                        <i class="fas" :class="mobileOpen ? 'fa-times' : 'fa-bars'"></i>
+                    </button>
+
+                    <div class="hidden sm:flex sm:items-center sm:ms-6">
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" class="inline-flex items-center px-4 py-2 border border-transparent text-sm leading-4 font-medium rounded-lg text-slate-700 bg-white/50 hover:bg-white hover:text-slate-900 focus:outline-none transition ease-in-out duration-150 shadow-sm hover:shadow-md">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mr-2">
+                                        <i class="fas fa-user text-white text-sm"></i>
+                                    </div>
+                                    <span id="user-name">User</span>
+                                </div>
+                                <div class="ms-2">
+                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                            </button>
+                            <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
+                                <a href="../profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-user-edit mr-2"></i> Profile
+                                </a>
+                                <a href="#" onclick="Logout.logout()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-sign-out-alt mr-2"></i> Log Out
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sm:hidden" x-show="mobileOpen" x-transition>
+                <div class="pt-2 pb-3 space-y-1">
+                    <a href="../dashboard.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                    </a>
+                    <a href="../staff/index.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-users mr-2"></i>Staff
+                    </a>
+                    <a href="index.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60 bg-white/40">
+                        <i class="fas fa-user-shield mr-2"></i>Users
+                    </a>
+                    <a href="../services/index.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-tools mr-2"></i>Services
+                    </a>
+                    <a href="../appointments.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-calendar mr-2"></i>Appointments
+                    </a>
+                    <a href="../schedule/index.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-clock mr-2"></i>Schedule
+                    </a>
+                </div>
+
+                <div class="pt-2 pb-3 border-t border-slate-200/60">
+                    <a href="../profile.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-user-edit mr-2"></i>Profile
+                    </a>
+                    <a href="#" onclick="Logout.logout()" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Log Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold"><i class="fas fa-user-shield mr-2"></i>User Management</h1>
+        </div>
+
+        <div id="users-loading" class="text-center py-6 text-blue-600">
+            <i class="fas fa-spinner fa-spin mr-2"></i>Loading users...
+        </div>
+
+        <div id="users-error" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-md mb-6" role="alert"></div>
+
+        <div class="bg-white rounded-lg shadow overflow-hidden hidden" id="users-table-wrapper">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="users-tbody"></tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination-wrapper" class="hidden mt-6 flex items-center justify-between">
+            <div class="text-sm text-gray-700">
+                Showing <span id="pagination-from">0</span> to <span id="pagination-to">0</span> of <span id="pagination-total">0</span> users
+            </div>
+            <div class="flex gap-2">
+                <button id="pagination-prev" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Previous
+                </button>
+                <button id="pagination-next" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Next
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Promotion Modal -->
+    <div id="promotion-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" onclick="closePromotionModal()">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold mb-4">Promote User Role</h3>
+                <p class="text-gray-600 mb-4">Are you sure you want to promote <strong id="promotion-user-name"></strong> to <strong id="promotion-new-role"></strong>?</p>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closePromotionModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="button" id="promotion-confirm-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
+                        Confirm Promotion
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deletion Modal -->
+    <div id="deletion-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" onclick="closeDeletionModal()">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold mb-4 text-red-600">Delete User Account</h3>
+                <p class="text-gray-600 mb-4">Are you sure you want to delete <strong id="deletion-user-name"></strong>? This action cannot be undone.</p>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeDeletionModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="button" id="deletion-confirm-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">
+                        Delete Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var currentPage = 1;
+        var currentUser = null;
+        var promotionUserId = null;
+        var promotionNewRole = null;
+        var deletionUserId = null;
+
+        $(function () {
+            if (!RoleGuard.requireRole(['admin', 'super_admin'])) {
+                return;
+            }
+
+            currentUser = Auth.getUser();
+            $('#user-name').text(currentUser ? (currentUser.name || currentUser.username || currentUser.email || currentUser.id) : 'User');
+
+            loadUsers();
+
+            $('#pagination-prev').on('click', function () {
+                if (currentPage > 1) {
+                    currentPage--;
+                    loadUsers();
+                }
+            });
+
+            $('#pagination-next').on('click', function () {
+                currentPage++;
+                loadUsers();
+            });
+        });
+
+        function showError(message) {
+            $('#users-loading').addClass('hidden');
+            $('#users-table-wrapper').addClass('hidden');
+            $('#pagination-wrapper').addClass('hidden');
+            $('#users-error').removeClass('hidden').text(message || 'Failed to load users.');
+        }
+
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function getRoleBadgeClass(role) {
+            if (role === 'super_admin') {
+                return 'bg-purple-100 text-purple-800';
+            }
+            if (role === 'admin') {
+                return 'bg-indigo-100 text-indigo-800';
+            }
+            if (role === 'staff') {
+                return 'bg-blue-100 text-blue-800';
+            }
+            return 'bg-gray-100 text-gray-800';
+        }
+
+        function getRoleDisplayName(role) {
+            if (role === 'super_admin') {
+                return 'Super Admin';
+            }
+            if (role === 'admin') {
+                return 'Admin';
+            }
+            if (role === 'staff') {
+                return 'Staff';
+            }
+            return role || 'Unknown';
+        }
+
+        function canPromote(user, newRole) {
+            if (!currentUser) return false;
+            var currentRole = (currentUser.role || '').toLowerCase();
+            var userRole = (user.role || '').toLowerCase();
+
+            // Super admin can promote staff -> admin and admin -> super_admin
+            if (currentRole === 'super_admin') {
+                if (newRole === 'admin') {
+                    return userRole === 'staff';
+                }
+                if (newRole === 'super_admin') {
+                    return userRole === 'admin';
+                }
+            }
+
+            // Admin can promote staff -> admin only
+            if (currentRole === 'admin') {
+                if (newRole === 'admin') {
+                    return userRole === 'staff';
+                }
+            }
+
+            return false;
+        }
+
+        function canDelete(user) {
+            if (!currentUser) return false;
+            if (currentUser.id === user.id) return false; // Cannot delete self
+
+            var currentRole = (currentUser.role || '').toLowerCase();
+            var userRole = (user.role || '').toLowerCase();
+
+            // Super admin can delete staff and admin (but not super_admin)
+            if (currentRole === 'super_admin') {
+                return userRole === 'staff' || userRole === 'admin';
+            }
+
+            // Admin can delete staff only
+            if (currentRole === 'admin') {
+                return userRole === 'staff';
+            }
+
+            return false;
+        }
+
+        function loadUsers() {
+            $('#users-loading').removeClass('hidden');
+            $('#users-error').addClass('hidden').text('');
+
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/users?page=' + currentPage,
+                method: 'GET'
+            }).done(function (res) {
+                var items = res && res.data && res.data.users ? res.data.users : [];
+                var pagination = res && res.data && res.data.pagination ? res.data.pagination : null;
+
+                if (!items.length) {
+                    $('#users-tbody').html('<tr><td colspan="4" class="px-6 py-4 text-center">No users found.</td></tr>');
+                } else {
+                    var html = '';
+                    items.forEach(function (user) {
+                        var fullName = [user.name, user.last_name].filter(Boolean).join(' ') || user.username || '-';
+                        var roleDisplay = getRoleDisplayName(user.role);
+                        var roleBadgeClass = getRoleBadgeClass(user.role);
+                        var isCurrentUser = currentUser && currentUser.id === user.id;
+
+                        html += '<tr>' +
+                            '<td class="px-6 py-4 whitespace-nowrap">' + escapeHtml(fullName) + '</td>' +
+                            '<td class="px-6 py-4 whitespace-nowrap">' + escapeHtml(user.email || '-') + '</td>' +
+                            '<td class="px-6 py-4 whitespace-nowrap">' +
+                            '<span class="px-2 py-1 text-xs font-semibold rounded-full ' + roleBadgeClass + '">' +
+                            escapeHtml(roleDisplay) +
+                            '</span>' +
+                            '</td>' +
+                            '<td class="px-6 py-4 whitespace-nowrap text-right">';
+
+                        // Promotion buttons
+                        if (!isCurrentUser) {
+                            if (canPromote(user, 'admin')) {
+                                html += '<button data-id="' + escapeHtml(user.id) + '" data-role="admin" data-name="' + escapeHtml(fullName) + '" class="btn-promote border-2 border-indigo-600 bg-transparent hover:bg-indigo-600 text-indigo-600 hover:text-white px-3 py-1 rounded transition text-sm font-medium mr-2">Promote to Admin</button>';
+                            }
+                            if (canPromote(user, 'super_admin')) {
+                                html += '<button data-id="' + escapeHtml(user.id) + '" data-role="super_admin" data-name="' + escapeHtml(fullName) + '" class="btn-promote border-2 border-purple-600 bg-transparent hover:bg-purple-600 text-purple-600 hover:text-white px-3 py-1 rounded transition text-sm font-medium mr-2">Promote to Super Admin</button>';
+                            }
+                        }
+
+                        // Delete button
+                        if (canDelete(user)) {
+                            html += '<button data-id="' + escapeHtml(user.id) + '" data-name="' + escapeHtml(fullName) + '" class="btn-delete border-2 border-red-600 bg-transparent hover:bg-red-600 text-red-600 hover:text-white px-3 py-1 rounded transition text-sm font-medium">Delete</button>';
+                        }
+
+                        html += '</td></tr>';
+                    });
+                    $('#users-tbody').html(html);
+                }
+
+                // Update pagination
+                if (pagination) {
+                    var from = ((pagination.current_page - 1) * pagination.per_page) + 1;
+                    var to = Math.min(pagination.current_page * pagination.per_page, pagination.total);
+                    $('#pagination-from').text(from);
+                    $('#pagination-to').text(to);
+                    $('#pagination-total').text(pagination.total);
+                    $('#pagination-prev').prop('disabled', pagination.current_page <= 1);
+                    $('#pagination-next').prop('disabled', pagination.current_page >= pagination.last_page);
+                    $('#pagination-wrapper').removeClass('hidden');
+                } else {
+                    $('#pagination-wrapper').addClass('hidden');
+                }
+
+                $('#users-loading').addClass('hidden');
+                $('#users-table-wrapper').removeClass('hidden');
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                showError((json && json.message) ? json.message : 'Failed to load users.');
+            });
+        }
+
+        function showPromotionModal(userId, newRole, userName) {
+            promotionUserId = userId;
+            promotionNewRole = newRole;
+            $('#promotion-user-name').text(escapeHtml(userName));
+            $('#promotion-new-role').text(getRoleDisplayName(newRole));
+            $('#promotion-modal').removeClass('hidden');
+        }
+
+        function closePromotionModal() {
+            $('#promotion-modal').addClass('hidden');
+            promotionUserId = null;
+            promotionNewRole = null;
+        }
+
+        function showDeletionModal(userId, userName) {
+            deletionUserId = userId;
+            $('#deletion-user-name').text(escapeHtml(userName));
+            $('#deletion-modal').removeClass('hidden');
+        }
+
+        function closeDeletionModal() {
+            $('#deletion-modal').addClass('hidden');
+            deletionUserId = null;
+        }
+
+        $(document).on('click', '.btn-promote', function () {
+            var id = $(this).data('id');
+            var role = $(this).data('role');
+            var name = $(this).data('name');
+            if (!id || !role) return;
+            showPromotionModal(id, role, name);
+        });
+
+        $(document).on('click', '.btn-delete', function () {
+            var id = $(this).data('id');
+            var name = $(this).data('name');
+            if (!id) return;
+            showDeletionModal(id, name);
+        });
+
+        $('#promotion-confirm-btn').on('click', function () {
+            if (!promotionUserId || !promotionNewRole) return;
+
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/users/' + encodeURIComponent(promotionUserId) + '/promote-role',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ role: promotionNewRole })
+            }).done(function () {
+                closePromotionModal();
+                loadUsers();
+                alert('User role promoted successfully!');
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                alert((json && json.message) ? json.message : 'Failed to promote user.');
+            });
+        });
+
+        $('#deletion-confirm-btn').on('click', function () {
+            if (!deletionUserId) return;
+
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/users/' + encodeURIComponent(deletionUserId),
+                method: 'DELETE'
+            }).done(function () {
+                closeDeletionModal();
+                loadUsers();
+                alert('User deleted successfully!');
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                alert((json && json.message) ? json.message : 'Failed to delete user.');
+            });
+        });
+    </script>
+</body>
+</html>
+
