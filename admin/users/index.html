@@ -361,9 +361,9 @@
             currentUser = Auth.getUser();
             $('#user-name').text(currentUser ? (currentUser.name || currentUser.username || currentUser.email || currentUser.id) : 'User');
 
-            // Show create button only for super admin
+            // Show create button for admin and super admin
             var userRole = (currentUser && currentUser.role) ? currentUser.role.toLowerCase() : '';
-            if (userRole === 'super_admin') {
+            if (userRole === 'super_admin' || userRole === 'admin') {
                 $('#create-user-btn').removeClass('hidden');
             } else {
                 $('#create-user-btn').addClass('hidden');
@@ -509,6 +509,11 @@
             // Super admin can edit admin, staff, and customer (but not super_admin)
             if (currentRole === 'super_admin') {
                 return userRole === 'admin' || userRole === 'staff' || userRole === 'customer';
+            }
+
+            // Admin can edit staff and customer (but not admin/super_admin)
+            if (currentRole === 'admin') {
+                return userRole === 'staff' || userRole === 'customer';
             }
 
             return false;
