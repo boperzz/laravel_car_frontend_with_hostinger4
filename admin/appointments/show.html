@@ -150,13 +150,19 @@
                 .replace(/'/g, '&#39;');
         }
 
-        function formatDateTime(iso) {
-            if (window.DateUtils && typeof window.DateUtils.formatDateTime === 'function') {
-                return window.DateUtils.formatDateTime(iso);
+        function formatDate(iso) {
+            // Use formatDate for MM/DD/YYYY format
+            if (window.DateUtils && typeof window.DateUtils.formatDate === 'function') {
+                return window.DateUtils.formatDate(iso);
             }
             if (!iso) return '—';
             try {
-                return new Date(iso).toISOString().replace('T', ' ').split('.')[0];
+                var d = new Date(iso);
+                if (isNaN(d.getTime())) return '—';
+                var month = String(d.getMonth() + 1).padStart(2, '0');
+                var day = String(d.getDate()).padStart(2, '0');
+                var year = d.getFullYear();
+                return month + '/' + day + '/' + year;
             } catch (e) {
                 return String(iso);
             }
@@ -195,7 +201,7 @@
                 $('#details-grid').html(
                     '<div><strong>Customer:</strong> ' + escapeHtml(customer) + '</div>' +
                     '<div><strong>Vehicle:</strong> ' + escapeHtml(vehicle) + '</div>' +
-                    '<div><strong>Date:</strong> ' + escapeHtml(formatDateTime(a.appointment_date)) + '</div>' +
+                    '<div><strong>Date:</strong> ' + escapeHtml(formatDate(a.appointment_date)) + '</div>' +
                     '<div><strong>Status:</strong> ' + escapeHtml(a.status || '-') + '</div>' +
                     '<div><strong>Staff:</strong> ' + escapeHtml(staff) + '</div>' +
                     '<div><strong>Total:</strong> ' + escapeHtml(total) + '</div>' +

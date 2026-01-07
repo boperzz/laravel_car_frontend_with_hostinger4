@@ -516,7 +516,7 @@
 
             appointments.forEach(function(a) {
                 const vehicle = a.vehicle ? `${a.vehicle.make || ''} ${a.vehicle.model || ''} ${a.vehicle.year || ''}`.trim() : '—';
-                const date = (window.DateUtils && DateUtils.formatDateTime) ? DateUtils.formatDateTime(a.appointment_date) : (a.appointment_date || '—');
+                const date = (window.DateUtils && DateUtils.formatDate) ? DateUtils.formatDate(a.appointment_date) : (a.appointment_date || '—');
                 const services = formatServices(a.services);
                 const staff = a.staff ? (a.staff.name || a.staff.username || '—') : '—';
                 const status = a.status || '—';

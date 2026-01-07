@@ -222,13 +222,19 @@
                 .replace(/'/g, '&#39;');
         }
 
-        function formatDateTime(iso) {
-            if (window.DateUtils && typeof window.DateUtils.formatDateTime === 'function') {
-                return window.DateUtils.formatDateTime(iso);
+        function formatDate(iso) {
+            // Use formatDate for MM/DD/YYYY format
+            if (window.DateUtils && typeof window.DateUtils.formatDate === 'function') {
+                return window.DateUtils.formatDate(iso);
             }
             if (!iso) return '—';
             try {
-                return new Date(iso).toISOString().replace('T', ' ').split('.')[0];
+                var d = new Date(iso);
+                if (isNaN(d.getTime())) return '—';
+                var month = String(d.getMonth() + 1).padStart(2, '0');
+                var day = String(d.getDate()).padStart(2, '0');
+                var year = d.getFullYear();
+                return month + '/' + day + '/' + year;
             } catch (e) {
                 return String(iso);
             }
@@ -275,8 +281,8 @@
                 $('#appt-info').html(
                     '<div>' +
                         '<label class="block text-sm font-medium text-gray-600 mb-1">Date &amp; Time</label>' +
-                        '<p class="text-lg font-semibold text-gray-900">' + escapeHtml(formatDateTime(a.appointment_date)) + '</p>' +
-                        '<p class="text-sm text-gray-600">' + escapeHtml(a.end_time ? ('Ends: ' + formatDateTime(a.end_time)) : '') + '</p>' +
+                        '<p class="text-lg font-semibold text-gray-900">' + escapeHtml(formatDate(a.appointment_date)) + '</p>' +
+                        '<p class="text-sm text-gray-600">' + escapeHtml(a.end_time ? ('Ends: ' + formatDate(a.end_time)) : '') + '</p>' +
                     '</div>' +
                     '<div>' +
                         '<label class="block text-sm font-medium text-gray-600 mb-1">Status</label>' +

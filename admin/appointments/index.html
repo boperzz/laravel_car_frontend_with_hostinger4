@@ -162,13 +162,19 @@
                 .replace(/'/g, '&#39;');
         }
 
-        function formatDateTime(iso) {
-            if (window.DateUtils && typeof window.DateUtils.formatDateTime === 'function') {
-                return window.DateUtils.formatDateTime(iso);
+        function formatDate(iso) {
+            // Use formatDate for MM/DD/YYYY format
+            if (window.DateUtils && typeof window.DateUtils.formatDate === 'function') {
+                return window.DateUtils.formatDate(iso);
             }
             if (!iso) return '—';
             try {
-                return new Date(iso).toISOString().replace('T', ' ').split('.')[0];
+                var d = new Date(iso);
+                if (isNaN(d.getTime())) return '—';
+                var month = String(d.getMonth() + 1).padStart(2, '0');
+                var day = String(d.getDate()).padStart(2, '0');
+                var year = d.getFullYear();
+                return month + '/' + day + '/' + year;
             } catch (e) {
                 return String(iso);
             }
@@ -213,7 +219,7 @@
                         var staff = a.staff ? (a.staff.name || a.staff.email) : 'Unassigned';
 
                         html += '<tr>' +
-                            '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(formatDateTime(a.appointment_date)) + '</td>' +
+                            '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(formatDate(a.appointment_date)) + '</td>' +
                             '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(customer) + '</td>' +
                             '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(vehicle) + '</td>' +
                             '<td class="px-6 py-4 whitespace-nowrap">' + statusBadge(a.status) + '</td>' +

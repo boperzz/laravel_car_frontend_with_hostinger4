@@ -231,13 +231,19 @@
             }
         }
 
-        function formatDateTime(iso) {
-            if (window.DateUtils && typeof window.DateUtils.formatDateTime === 'function') {
-                return window.DateUtils.formatDateTime(iso);
+        function formatDate(iso) {
+            // Use formatDate for MM/DD/YYYY format
+            if (window.DateUtils && typeof window.DateUtils.formatDate === 'function') {
+                return window.DateUtils.formatDate(iso);
             }
             if (!iso) return '—';
             try {
-                return new Date(iso).toISOString().replace('T', ' ').split('.')[0];
+                var d = new Date(iso);
+                if (isNaN(d.getTime())) return '—';
+                var month = String(d.getMonth() + 1).padStart(2, '0');
+                var day = String(d.getDate()).padStart(2, '0');
+                var year = d.getFullYear();
+                return month + '/' + day + '/' + year;
             } catch (e) {
                 return String(iso);
             }
@@ -268,7 +274,7 @@
                 var vehicleName = a && a.vehicle ? (a.vehicle.full_name || a.vehicle.license_plate || '') : '';
                 var customerName = a && a.user ? (a.user.name || a.user.email || '') : '';
                 var serviceNames = (a.services || []).map(function (s) { return s.name; }).filter(Boolean).join(', ');
-                var when = options.timeOnly ? formatTime(a.appointment_date) : formatDateTime(a.appointment_date);
+                var when = options.timeOnly ? formatTime(a.appointment_date) : formatDate(a.appointment_date);
 
                 html += '<div class="border-l-4 border-' + borderColor + '-500 pl-4 py-2 hover:bg-gray-50 rounded">' +
                     '<div class="flex justify-between items-start">' +

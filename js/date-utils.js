@@ -55,10 +55,44 @@
         return hours + ':' + minutes + ':' + seconds;
     }
 
+    /**
+     * Format a date value as MM/DD/YYYY (for appointment dates)
+     * Example: 12/25/2024
+     */
+    function formatDate(value) {
+        var d = parseDate(value);
+        if (!d) return '—';
+
+        var month = pad(d.getMonth() + 1);
+        var day = pad(d.getDate());
+        var year = d.getFullYear();
+
+        return month + '/' + day + '/' + year;
+    }
+
+    /**
+     * Format a date and time value as MM/DD/YYYY HH:mm
+     * Example: 12/25/2024 14:30
+     */
+    function formatDateTimeShort(value) {
+        var d = parseDate(value);
+        if (!d) return '—';
+
+        var month = pad(d.getMonth() + 1);
+        var day = pad(d.getDate());
+        var year = d.getFullYear();
+        var hours = pad(d.getHours());
+        var minutes = pad(d.getMinutes());
+
+        return month + '/' + day + '/' + year + ' ' + hours + ':' + minutes;
+    }
+
     global.DateUtils = {
         parseDate: parseDate,
         formatDateTime: formatDateTime,
-        formatTime: formatTime
+        formatTime: formatTime,
+        formatDate: formatDate,
+        formatDateTimeShort: formatDateTimeShort
     };
 })(window);
 

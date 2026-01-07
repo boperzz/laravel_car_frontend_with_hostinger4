@@ -23,8 +23,9 @@
     }
 
     function formatDate(iso) {
-        if (global.DateUtils && typeof global.DateUtils.formatDateTime === 'function') {
-            return global.DateUtils.formatDateTime(iso);
+        // Use the new formatDate function for MM/DD/YYYY format
+        if (global.DateUtils && typeof global.DateUtils.formatDate === 'function') {
+            return global.DateUtils.formatDate(iso);
         }
 
         // Fallback if DateUtils is not loaded
@@ -35,12 +36,10 @@
         if (isNaN(d.getTime())) {
             return '—';
         }
-        return d.getFullYear() + '-' +
-            String(d.getMonth() + 1).padStart(2, '0') + '-' +
-            String(d.getDate()).padStart(2, '0') + ' ' +
-            String(d.getHours()).padStart(2, '0') + ':' +
-            String(d.getMinutes()).padStart(2, '0') + ':' +
-            String(d.getSeconds()).padStart(2, '0');
+        var month = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        var year = d.getFullYear();
+        return month + '/' + day + '/' + year;
     }
 
     function formatMoney(value) {
@@ -400,11 +399,18 @@
         var $btn = global.jQuery('#assign-staff-btn');
         $btn.prop('disabled', true).text('Assigning...');
 
+        var staffIdInt = parseInt(staffId, 10);
+        if (isNaN(staffIdInt)) {
+            showAlert('error', 'Invalid staff ID selected.');
+            return;
+        }
+
         Api.request({
             url: Api.getBaseUrl() + '/admin/appointments/' + appointment.id + '/assign-staff',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ staff_id: parseInt(staffId, 10) }),
+            processData: false,
+            data: JSON.stringify({ staff_id: staffIdInt }),
             headers: { 'Accept': 'application/json' }
         }).done(function (res) {
             if (res && res.success && res.data && res.data.appointment) {

@@ -493,7 +493,7 @@
                     let html = '<div class="space-y-3">';
                     recent.forEach(function(a) {
                         const vehicle = a.vehicle ? `${a.vehicle.make || ''} ${a.vehicle.model || ''}`.trim() : '—';
-                        const dt = (window.DateUtils && DateUtils.formatDateTime) ? DateUtils.formatDateTime(a.appointment_date) : (a.appointment_date || '—');
+                        const dt = (window.DateUtils && DateUtils.formatDate) ? DateUtils.formatDate(a.appointment_date) : (a.appointment_date || '—');
                         html += `
                             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                 <div>
