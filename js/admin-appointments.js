@@ -501,10 +501,26 @@
                 return;
             }
             
-            // Scroll to top of the page
-            global.jQuery('html, body').animate({
-                scrollTop: 0
-            }, 300);
+            // Check if mobile view (screen width < 1024px, which is Tailwind's lg breakpoint)
+            var isMobile = global.jQuery(window).width() < 1024;
+            
+            if (isMobile) {
+                // On mobile: scroll down to appointment details panel
+                var detailsPanel = global.jQuery('#admin-appointment-details, #admin-appointment-placeholder');
+                if (detailsPanel.length) {
+                    var offset = detailsPanel.offset();
+                    if (offset) {
+                        global.jQuery('html, body').animate({
+                            scrollTop: offset.top - 20 // 20px offset from top for better visibility
+                        }, 300);
+                    }
+                }
+            } else {
+                // On desktop: scroll to top of the page
+                global.jQuery('html, body').animate({
+                    scrollTop: 0
+                }, 300);
+            }
             
             var id = global.jQuery(this).data('id');
             setLoading(true);
@@ -523,6 +539,21 @@
 
                 applySearchFilterAndRender();
                 renderAppointmentDetails(fresh);
+                
+                // On mobile, scroll to details panel after it's rendered
+                if (isMobile) {
+                    setTimeout(function() {
+                        var detailsPanel = global.jQuery('#admin-appointment-details');
+                        if (detailsPanel.length && detailsPanel.is(':visible')) {
+                            var offset = detailsPanel.offset();
+                            if (offset) {
+                                global.jQuery('html, body').animate({
+                                    scrollTop: offset.top - 20
+                                }, 300);
+                            }
+                        }
+                    }, 100); // Small delay to ensure panel is rendered
+                }
             }).fail(function (xhr) {
                 if (xhr && xhr.status === 401) {
                     return;
