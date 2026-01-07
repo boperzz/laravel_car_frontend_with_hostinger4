@@ -637,6 +637,12 @@
             return;
         }
 
+        // Set username in dropdown
+        var currentUser = global.Auth && global.Auth.getUser ? global.Auth.getUser() : null;
+        if (currentUser && global.jQuery('#user-name').length) {
+            global.jQuery('#user-name').text(currentUser.username || currentUser.name || currentUser.email || currentUser.id || 'User');
+        }
+
         bindEvents();
 
         if (!global.jQuery('#status').val()) {
