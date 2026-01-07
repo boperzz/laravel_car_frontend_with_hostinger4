@@ -17,6 +17,18 @@
     <script src="../../js/logout.js"></script>
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        // Redirect admin and super_admin to user management page
+        $(document).ready(function() {
+            var user = Auth.getUser();
+            if (user && user.role) {
+                var role = (user.role || '').toLowerCase();
+                if (role === 'admin' || role === 'super_admin') {
+                    window.location.href = '../users/index.html';
+                }
+            }
+        });
+    </script>
 </head>
 <body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
     <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm sticky top-0 z-50" x-data="{ mobileOpen: false }">
