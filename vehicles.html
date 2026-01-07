@@ -114,17 +114,11 @@
                                     </div>
                                 </button>
                                 <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
-                                    <a href="booking.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <i class="fas fa-calendar-plus mr-2"></i> Book Appointment
-                                    </a>
                                     <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         <i class="fas fa-user-edit mr-2"></i> Profile
                                     </a>
-                                    <a href="login.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <i class="fas fa-sign-in-alt mr-2"></i> Login
-                                    </a>
-                                    <a href="register.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <i class="fas fa-user-plus mr-2"></i> Register
+                                    <a href="#" onclick="Logout.logout()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-sign-out-alt mr-2"></i> Log Out
                                     </a>
                                 </div>
                             </div>
@@ -153,11 +147,8 @@
                     <a href="profile.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
                         <i class="fas fa-user-edit mr-2"></i>Profile
                     </a>
-                    <a href="login.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Login
-                    </a>
-                    <a href="register.html" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
-                        <i class="fas fa-user-plus mr-2"></i>Register
+                    <a href="#" onclick="Logout.logout()" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Log Out
                     </a>
                 </div>
             </div>
