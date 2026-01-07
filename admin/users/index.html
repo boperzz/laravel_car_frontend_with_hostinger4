@@ -514,6 +514,18 @@
             return false;
         }
 
+        function canSendVerification(user, isVerified) {
+            if (!currentUser) return false;
+            if (currentUser.id === user.id) return false; // Not for self
+
+            var currentRole = (currentUser.role || '').toLowerCase();
+            var userRole = (user.role || '').toLowerCase();
+
+            if (currentRole !== 'super_admin') return false;
+            if (userRole === 'super_admin') return false; // Do not send for super admin accounts here
+            return !isVerified;
+        }
+
         function loadUsers() {
             $('#users-loading').removeClass('hidden');
             $('#users-error').addClass('hidden').text('');
@@ -544,6 +556,7 @@
                         var roleDisplay = getRoleDisplayName(user.role);
                         var roleBadgeClass = getRoleBadgeClass(user.role);
                         var isCurrentUser = currentUser && currentUser.id === user.id;
+                        var isVerified = !!user.email_verified;
 
                         html += '<tr>' +
                             '<td class="px-6 py-4 whitespace-nowrap">' + escapeHtml(fullName) + '</td>' +
@@ -558,6 +571,11 @@
                         // Edit button (super admin editing admin/staff/customer)
                         if (!isCurrentUser && canEdit(user)) {
                             html += '<button data-id="' + escapeHtml(user.id) + '" class="btn-edit border-2 border-gray-400 bg-transparent hover:bg-gray-700 text-gray-700 hover:text-white px-3 py-1 rounded transition text-sm font-medium mr-2">Edit</button>';
+                        }
+
+                        // Send verification button (super admin) for unverified users
+                        if (!isCurrentUser && canSendVerification(user, isVerified)) {
+                            html += '<button data-id="' + escapeHtml(user.id) + '" class="btn-send-verification border-2 border-amber-500 bg-transparent hover:bg-amber-500 text-amber-600 hover:text-white px-3 py-1 rounded transition text-sm font-medium mr-2">Send Verification</button>';
                         }
 
                         // Promotion buttons
@@ -652,6 +670,27 @@
             if (!user) return;
 
             showEditUserModal(user);
+        });
+
+        $(document).on('click', '.btn-send-verification', function () {
+            var id = $(this).data('id');
+            if (!id) return;
+
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/users/' + encodeURIComponent(id) + '/send-verification',
+                method: 'POST',
+                headers: { 'Accept': 'application/json' }
+            }).done(function (res) {
+                if (res && res.success) {
+                    alert(res.message || 'Verification email sent successfully!');
+                    loadUsers();
+                } else {
+                    alert((res && res.message) ? res.message : 'Failed to send verification email.');
+                }
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                alert((json && json.message) ? json.message : 'Failed to send verification email.');
+            });
         });
 
         $('#promotion-confirm-btn').on('click', function () {
