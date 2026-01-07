@@ -329,6 +329,9 @@
             if (role === 'staff') {
                 return 'bg-blue-100 text-blue-800';
             }
+            if (role === 'customer') {
+                return 'bg-green-100 text-green-800';
+            }
             return 'bg-gray-100 text-gray-800';
         }
 
@@ -341,6 +344,9 @@
             }
             if (role === 'staff') {
                 return 'Staff';
+            }
+            if (role === 'customer') {
+                return 'Customer';
             }
             return role || 'Unknown';
         }
@@ -377,9 +383,9 @@
             var currentRole = (currentUser.role || '').toLowerCase();
             var userRole = (user.role || '').toLowerCase();
 
-            // Super admin can delete staff and admin (but not super_admin)
+            // Super admin can delete staff, admin, and customer (but not super_admin)
             if (currentRole === 'super_admin') {
-                return userRole === 'staff' || userRole === 'admin';
+                return userRole === 'staff' || userRole === 'admin' || userRole === 'customer';
             }
 
             // Admin can delete staff only
