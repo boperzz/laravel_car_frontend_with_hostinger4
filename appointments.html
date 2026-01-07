@@ -589,7 +589,9 @@
             const vehicle = a.vehicle ? `${a.vehicle.make || ''} ${a.vehicle.model || ''} ${a.vehicle.year || ''}`.trim() : '—';
             const services = formatServices(a.services);
             const staff = a.staff ? (a.staff.name || a.staff.username || '—') : '—';
-            const date = (window.DateUtils && DateUtils.formatDateTime) ? DateUtils.formatDateTime(a.appointment_date) : (a.appointment_date || '—');
+            const date = (window.DateUtils && DateUtils.formatDateTimeShort)
+                ? DateUtils.formatDateTimeShort(a.appointment_date)
+                : (a.appointment_date || '—');
             const status = a.status || '—';
             const total = (a.total_price !== null && a.total_price !== undefined) ? `$${parseFloat(a.total_price).toFixed(2)}` : '—';
 
