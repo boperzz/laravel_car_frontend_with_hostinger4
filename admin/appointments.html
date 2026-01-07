@@ -173,7 +173,6 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Services</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Staff</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="admin-appointments-tbody" class="bg-white divide-y divide-gray-200"></tbody>
@@ -253,6 +252,19 @@
         </div>
     </main>
 
+    <style>
+        /* Make table rows clickable */
+        #admin-appointments-tbody tr {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        #admin-appointments-tbody tr:hover {
+            background-color: #f3f4f6;
+        }
+        #admin-appointments-tbody tr:active {
+            background-color: #e5e7eb;
+        }
+    </style>
     <script>
         $(function () {
             AdminAppointments.init();

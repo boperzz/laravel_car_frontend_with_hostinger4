@@ -180,7 +180,7 @@
                 return !!x;
             }).join(', ');
 
-            var row = '<tr>'
+            var row = '<tr data-action="view" data-id="' + escapeHtml(a.id) + '">'
                 + '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(formatDate(a.appointment_date)) + '</td>'
                 + '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(customer) + '</td>'
                 + '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(vehicle) + '</td>'
@@ -191,10 +191,6 @@
                 + '</span>'
                 + '</td>'
                 + '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(staff) + '</td>'
-                + '<td class="px-6 py-4 whitespace-nowrap text-right text-sm">'
-                + '<button type="button" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-3 py-1 rounded transition text-sm font-medium"'
-                + ' data-action="view" data-id="' + escapeHtml(a.id) + '">View</button>'
-                + '</td>'
                 + '</tr>';
 
             $tbody.append(row);
@@ -498,7 +494,13 @@
             }, 200);
         });
 
-        global.jQuery(document).on('click', 'button[data-action="view"]', function () {
+        // Make table rows clickable to view appointment details
+        global.jQuery(document).on('click', '#admin-appointments-tbody tr[data-action="view"]', function (e) {
+            // Prevent row click if clicking on interactive elements inside the row
+            if (global.jQuery(e.target).is('button, a, input, select, textarea')) {
+                return;
+            }
+            
             var id = global.jQuery(this).data('id');
             setLoading(true);
             fetchAppointment(id).done(function (fresh) {
@@ -516,7 +518,10 @@
 
                 applySearchFilterAndRender();
                 renderAppointmentDetails(fresh);
-            }).fail(function () {
+            }).fail(function (xhr) {
+                if (xhr && xhr.status === 401) {
+                    return;
+                }
                 showAlert('error', 'Failed to load appointment details.');
             }).always(function () {
                 setLoading(false);
