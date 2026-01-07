@@ -337,6 +337,15 @@
         }
 
         renderStaffOptions(appointment);
+
+        // Show/hide cancel button based on status
+        var status = (appointment.status || '').toLowerCase();
+        var $cancelSection = global.jQuery('#admin-cancel-section');
+        if (status === 'cancelled') {
+            $cancelSection.addClass('hidden');
+        } else {
+            $cancelSection.removeClass('hidden');
+        }
     }
 
     function renderServices(appointment) {
@@ -516,6 +525,72 @@
 
         global.jQuery('#assign-staff-btn').on('click', function () {
             assignStaff();
+        });
+
+        global.jQuery('#cancel-appointment-btn').on('click', function () {
+            if (confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) {
+                cancelAppointment();
+            }
+        });
+    }
+
+    function cancelAppointment() {
+        var appointment = state.selectedAppointment;
+        if (!appointment) {
+            showAlert('error', 'No appointment selected.');
+            return;
+        }
+
+        var status = (appointment.status || '').toLowerCase();
+        if (status === 'cancelled') {
+            showAlert('error', 'Appointment is already cancelled.');
+            return;
+        }
+
+        var $btn = global.jQuery('#cancel-appointment-btn');
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Cancelling...');
+
+        Api.request({
+            url: Api.getBaseUrl() + '/admin/appointments/' + appointment.id + '/status',
+            method: 'PATCH',
+            contentType: 'application/json',
+            processData: false,
+            data: JSON.stringify({ status: 'cancelled' }),
+            headers: { 'Accept': 'application/json' }
+        }).done(function (res) {
+            if (res && res.success && res.data && res.data.appointment) {
+                var updated = res.data.appointment;
+
+                // Update appointment in state
+                for (var i = 0; i < state.appointments.length; i++) {
+                    if (String(state.appointments[i].id) === String(updated.id)) {
+                        state.appointments[i] = updated;
+                        break;
+                    }
+                }
+
+                showAlert('success', 'Appointment cancelled successfully.');
+                applySearchFilterAndRender();
+                renderAppointmentDetails(updated);
+                return;
+            }
+
+            showAlert('error', (res && res.message) ? res.message : 'Failed to cancel appointment.');
+        }).fail(function (xhr) {
+            if (xhr && xhr.status === 401) {
+                return;
+            }
+
+            var msg = 'Failed to cancel appointment.';
+            try {
+                var parsed = xhr.responseJSON;
+                if (parsed && parsed.message) {
+                    msg = parsed.message;
+                }
+            } catch (e) {}
+            showAlert('error', msg);
+        }).always(function () {
+            $btn.prop('disabled', false).html('<i class="fas fa-times mr-2"></i>Cancel Appointment');
         });
     }
 
