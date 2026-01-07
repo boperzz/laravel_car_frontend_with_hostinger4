@@ -124,6 +124,9 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold"><i class="fas fa-user-shield mr-2"></i>User Management</h1>
+            <button id="create-user-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold transition">
+                <i class="fas fa-plus mr-2"></i>Create User
+            </button>
         </div>
 
         <div id="users-loading" class="text-center py-6 text-blue-600">
@@ -198,6 +201,65 @@
         </div>
     </div>
 
+    <!-- Create User Modal -->
+    <div id="create-user-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" onclick="closeCreateUserModal()">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold mb-4">Create New User</h3>
+                <div id="create-user-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
+                <form id="create-user-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+                            <input type="text" name="username" required class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                            <input type="email" name="email" required class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                            <input type="text" name="name" required class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                            <input type="text" name="middle_name" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                            <input type="text" name="last_name" required class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                            <select name="role" id="create-user-role" required class="w-full border rounded-lg px-3 py-2">
+                                <option value="">Select Role</option>
+                                <option value="customer">Customer</option>
+                                <option value="staff">Staff</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                            <input type="password" name="password" id="create-user-password" required class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password *</label>
+                            <input type="password" name="password_confirmation" id="create-user-password-confirmation" required class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="closeCreateUserModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
+                            Create User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         var currentPage = 1;
         var currentUser = null;
@@ -212,6 +274,19 @@
 
             currentUser = Auth.getUser();
             $('#user-name').text(currentUser ? (currentUser.name || currentUser.username || currentUser.email || currentUser.id) : 'User');
+
+            // Show create button only for super admin
+            var userRole = (currentUser && currentUser.role) ? currentUser.role.toLowerCase() : '';
+            if (userRole === 'super_admin') {
+                $('#create-user-btn').removeClass('hidden');
+            } else {
+                $('#create-user-btn').addClass('hidden');
+            }
+
+            // Update role dropdown for super admin
+            if (userRole === 'super_admin') {
+                $('#create-user-role').append('<option value="super_admin">Super Admin</option>');
+            }
 
             loadUsers();
 
@@ -459,6 +534,75 @@
             }).fail(function (xhr) {
                 var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
                 alert((json && json.message) ? json.message : 'Failed to delete user.');
+            });
+        });
+
+        $('#create-user-btn').on('click', function () {
+            $('#create-user-modal').removeClass('hidden');
+            $('#create-user-form')[0].reset();
+            $('#create-user-error').addClass('hidden').text('');
+        });
+
+        function closeCreateUserModal() {
+            $('#create-user-modal').addClass('hidden');
+            $('#create-user-form')[0].reset();
+            $('#create-user-error').addClass('hidden').text('');
+        }
+
+        $('#create-user-form').on('submit', function (e) {
+            e.preventDefault();
+            $('#create-user-error').addClass('hidden').text('');
+
+            var formData = {
+                username: $('input[name="username"]').val(),
+                name: $('input[name="name"]').val(),
+                middle_name: $('input[name="middle_name"]').val() || null,
+                last_name: $('input[name="last_name"]').val(),
+                email: $('input[name="email"]').val(),
+                password: $('#create-user-password').val(),
+                password_confirmation: $('#create-user-password-confirmation').val(),
+                role: $('#create-user-role').val()
+            };
+
+            if (formData.password !== formData.password_confirmation) {
+                $('#create-user-error').removeClass('hidden').text('Passwords do not match.');
+                return;
+            }
+
+            var $submitBtn = $(this).find('button[type="submit"]');
+            $submitBtn.prop('disabled', true).text('Creating...');
+
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/users',
+                method: 'POST',
+                contentType: 'application/json',
+                processData: false,
+                data: JSON.stringify(formData),
+                headers: { 'Accept': 'application/json' }
+            }).done(function (res) {
+                if (res && res.success) {
+                    closeCreateUserModal();
+                    loadUsers();
+                    alert('User created successfully!');
+                } else {
+                    $('#create-user-error').removeClass('hidden').text((res && res.message) ? res.message : 'Failed to create user.');
+                }
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                var errorMsg = 'Failed to create user.';
+                if (json) {
+                    if (json.message) {
+                        errorMsg = json.message;
+                    } else if (json.errors) {
+                        var errorKeys = Object.keys(json.errors);
+                        if (errorKeys.length > 0) {
+                            errorMsg = json.errors[errorKeys[0]][0] || errorMsg;
+                        }
+                    }
+                }
+                $('#create-user-error').removeClass('hidden').text(errorMsg);
+            }).always(function () {
+                $submitBtn.prop('disabled', false).text('Create User');
             });
         });
     </script>
