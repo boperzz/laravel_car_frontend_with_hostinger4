@@ -370,6 +370,7 @@
         let selectedDate = null;
         let selectedTimeSlot = null;
         let availableSlots = [];
+        let bookedSlots = []; // Track slots that are already booked
         let myVehicles = [];
 
         // Configuration: API Base URL
@@ -649,6 +650,10 @@
 
             $('#time-slots-container').html('<div class="text-center py-2 text-blue-600"><i class="fas fa-spinner fa-spin mr-2"></i>Loading available slots...</div>');
 
+            // Reset booked slots
+            bookedSlots = [];
+
+            // First, load available slots from API
             $.ajax({
                 url: `${apiUrl}/public/available-slots`,
                 method: 'POST',
@@ -660,7 +665,8 @@
                 success: function(response) {
                     if (response.success && response.data) {
                         availableSlots = response.data.slots || [];
-                        renderTimeSlots();
+                        // Then load existing appointments to check for booked slots
+                        loadBookedAppointments();
                     } else {
                         $('#time-slots-container').html('<p class="text-sm text-red-600">No available slots for this date.</p>');
                     }
@@ -674,6 +680,116 @@
                     $('#time-slots-container').html(`<p class="text-sm text-red-600">${errorMsg}</p>`);
                 }
             });
+        }
+
+        // Load existing appointments for the selected date to identify booked slots
+        function loadBookedAppointments() {
+            const apiUrl = getApiUrl();
+            const token = getAuthToken();
+
+            // If user is logged in, check their appointments
+            if (token) {
+                $.ajax({
+                    url: `${apiUrl}/me/appointments`,
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    success: function(response) {
+                        if (response.success && response.data && response.data.appointments) {
+                            const appointments = response.data.appointments;
+                            const selectedDateStr = selectedDate; // Format: YYYY-MM-DD
+                            
+                            // Filter appointments for the selected date
+                            appointments.forEach(function(apt) {
+                                if (!apt.appointment_date) return;
+                                
+                                const aptDate = new Date(apt.appointment_date);
+                                const selectedDateObj = new Date(selectedDateStr);
+                                
+                                // Check if appointment is on the selected date
+                                if (aptDate.toISOString().split('T')[0] === selectedDateObj.toISOString().split('T')[0]) {
+                                    // Extract time from appointment_date
+                                    const aptTime = aptDate.toTimeString().substring(0, 5); // HH:mm format
+                                    bookedSlots.push(aptTime);
+                                    
+                                    // Also check if appointment has an end_time and mark that range as booked
+                                    if (apt.end_time) {
+                                        const endTime = new Date(apt.end_time);
+                                        const endTimeStr = endTime.toTimeString().substring(0, 5);
+                                        // Mark all 30-minute slots between start and end as booked
+                                        markTimeRangeAsBooked(aptTime, endTimeStr);
+                                    }
+                                }
+                            });
+                        }
+                        
+                        // Also check all appointments (admin endpoint) if possible
+                        // For now, we'll rely on the user's appointments and the API's availability check
+                        renderTimeSlots();
+                    },
+                    error: function(xhr) {
+                        // If we can't load user appointments, still render slots
+                        // The API should have already filtered unavailable slots
+                        console.warn('Could not load user appointments:', xhr);
+                        renderTimeSlots();
+                    }
+                });
+            } else {
+                // If not logged in, just render the slots returned by the API
+                // The API should have already filtered unavailable slots
+                renderTimeSlots();
+            }
+        }
+
+        // Mark a time range as booked (for appointments that span multiple slots)
+        function markTimeRangeAsBooked(startTime, endTime) {
+            const start = parseTime(startTime);
+            const end = parseTime(endTime);
+            
+            if (!start || !end) return;
+            
+            let current = new Date(start);
+            while (current < end) {
+                const timeStr = current.toTimeString().substring(0, 5);
+                if (bookedSlots.indexOf(timeStr) === -1) {
+                    bookedSlots.push(timeStr);
+                }
+                // Move to next 30-minute slot
+                current.setMinutes(current.getMinutes() + 30);
+            }
+        }
+
+        // Parse time string (HH:mm) to Date object
+        function parseTime(timeStr) {
+            if (!timeStr || typeof timeStr !== 'string') return null;
+            const parts = timeStr.split(':');
+            if (parts.length < 2) return null;
+            
+            const date = new Date();
+            date.setHours(parseInt(parts[0], 10));
+            date.setMinutes(parseInt(parts[1], 10));
+            date.setSeconds(0);
+            date.setMilliseconds(0);
+            return date;
+        }
+
+        // Check if a slot is booked
+        function isSlotBooked(slotDatetime) {
+            if (!slotDatetime) return false;
+            
+            // Extract time from slot datetime
+            let timeStr = '';
+            if (slotDatetime.includes('T')) {
+                timeStr = slotDatetime.split('T')[1].substring(0, 5);
+            } else if (slotDatetime.includes(' ')) {
+                timeStr = slotDatetime.split(' ')[1].substring(0, 5);
+            } else {
+                timeStr = slotDatetime.substring(0, 5);
+            }
+            
+            return bookedSlots.indexOf(timeStr) !== -1;
         }
 
         // Render time slots
@@ -699,22 +815,40 @@
                     timeStr = slotDatetime.substring(0, 5);
                 }
                 
+                // Check if this slot is already booked
+                const isBooked = isSlotBooked(slotDatetime);
+                
+                // Determine button classes and disabled state
+                const baseClasses = 'time-slot px-3 py-2 text-sm border-2 rounded-lg transition';
+                const normalClasses = 'border-gray-300 hover:border-gray-400';
+                const bookedClasses = 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50';
+                const classes = isBooked ? `${baseClasses} ${bookedClasses}` : `${baseClasses} ${normalClasses}`;
+                
                 const slotBtn = $(`
-                    <button type="button" class="time-slot px-3 py-2 text-sm border-2 border-gray-300 rounded-lg hover:border-gray-400 transition" data-time="${slotDatetime}">
-                        ${timeStr}
+                    <button type="button" class="${classes}" data-time="${slotDatetime}" ${isBooked ? 'disabled title="This time slot is already booked"' : ''}>
+                        ${timeStr}${isBooked ? ' <i class="fas fa-lock text-xs"></i>' : ''}
                     </button>
                 `);
 
-                slotBtn.on('click', function() {
-                    $('.time-slot').removeClass('selected');
-                    $(this).addClass('selected');
-                    selectedTimeSlot = $(this).data('time');
-                });
+                if (!isBooked) {
+                    slotBtn.on('click', function() {
+                        $('.time-slot').removeClass('selected');
+                        $(this).addClass('selected');
+                        selectedTimeSlot = $(this).data('time');
+                    });
+                } else {
+                    slotBtn.css('pointer-events', 'none');
+                }
 
                 slotsGrid.append(slotBtn);
             });
 
             container.append(slotsGrid);
+            
+            // Show message if there are booked slots
+            if (bookedSlots.length > 0) {
+                container.append('<p class="mt-2 text-xs text-gray-500"><i class="fas fa-info-circle mr-1"></i>Locked slots are already booked</p>');
+            }
         }
 
         // Update summary
@@ -861,6 +995,7 @@
             selectedDate = null;
             selectedTimeSlot = null;
             availableSlots = [];
+            bookedSlots = [];
             $('.service-card').removeClass('selected');
             $('.service-card input[type="checkbox"]').prop('checked', false);
             $('#time-slots-container').html('<p class="text-sm text-gray-500">Select a date and services first</p>');
