@@ -514,7 +514,7 @@
             return false;
         }
 
-        function canSendVerification(user, isVerified) {
+        function canVerifyNow(user, isVerified) {
             if (!currentUser) return false;
             if (currentUser.id === user.id) return false; // Not for self
 
@@ -573,9 +573,9 @@
                             html += '<button data-id="' + escapeHtml(user.id) + '" class="btn-edit border-2 border-gray-400 bg-transparent hover:bg-gray-700 text-gray-700 hover:text-white px-3 py-1 rounded transition text-sm font-medium mr-2">Edit</button>';
                         }
 
-                        // Send verification button (super admin) for unverified users
-                        if (!isCurrentUser && canSendVerification(user, isVerified)) {
-                            html += '<button data-id="' + escapeHtml(user.id) + '" class="btn-send-verification border-2 border-amber-500 bg-transparent hover:bg-amber-500 text-amber-600 hover:text-white px-3 py-1 rounded transition text-sm font-medium mr-2">Send Verification</button>';
+                        // Verify now button (super admin) for unverified users
+                        if (!isCurrentUser && canVerifyNow(user, isVerified)) {
+                            html += '<button data-id="' + escapeHtml(user.id) + '" class="btn-verify-now border-2 border-amber-500 bg-transparent hover:bg-amber-500 text-amber-600 hover:text-white px-3 py-1 rounded transition text-sm font-medium mr-2">Verify Now</button>';
                         }
 
                         // Promotion buttons
@@ -672,24 +672,24 @@
             showEditUserModal(user);
         });
 
-        $(document).on('click', '.btn-send-verification', function () {
+        $(document).on('click', '.btn-verify-now', function () {
             var id = $(this).data('id');
             if (!id) return;
 
             Api.request({
-                url: Api.getBaseUrl() + '/admin/users/' + encodeURIComponent(id) + '/send-verification',
+                url: Api.getBaseUrl() + '/admin/users/' + encodeURIComponent(id) + '/verify',
                 method: 'POST',
                 headers: { 'Accept': 'application/json' }
             }).done(function (res) {
                 if (res && res.success) {
-                    alert(res.message || 'Verification email sent successfully!');
+                    alert(res.message || 'User verified successfully!');
                     loadUsers();
                 } else {
-                    alert((res && res.message) ? res.message : 'Failed to send verification email.');
+                    alert((res && res.message) ? res.message : 'Failed to verify user.');
                 }
             }).fail(function (xhr) {
                 var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
-                alert((json && json.message) ? json.message : 'Failed to send verification email.');
+                alert((json && json.message) ? json.message : 'Failed to verify user.');
             });
         });
 
