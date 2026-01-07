@@ -404,7 +404,7 @@
             url: Api.getBaseUrl() + '/admin/appointments/' + appointment.id + '/assign-staff',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ staff_id: staffId }),
+            data: JSON.stringify({ staff_id: parseInt(staffId, 10) }),
             headers: { 'Accept': 'application/json' }
         }).done(function (res) {
             if (res && res.success && res.data && res.data.appointment) {
@@ -432,8 +432,12 @@
             var msg = 'Failed to assign staff.';
             try {
                 var parsed = xhr.responseJSON;
-                if (parsed && parsed.message) {
-                    msg = parsed.message;
+                if (parsed) {
+                    if (parsed.message) {
+                        msg = parsed.message;
+                    } else if (parsed.errors && parsed.errors.staff_id && parsed.errors.staff_id.length > 0) {
+                        msg = parsed.errors.staff_id[0];
+                    }
                 }
             } catch (e) {}
             showAlert('error', msg);

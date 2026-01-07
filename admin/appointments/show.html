@@ -241,7 +241,8 @@
             Api.request({
                 url: Api.getBaseUrl() + '/admin/appointments/' + encodeURIComponent(APPT_ID) + '/assign-staff',
                 method: 'POST',
-                data: { staff_id: staffId },
+                contentType: 'application/json',
+                data: JSON.stringify({ staff_id: parseInt(staffId, 10) }),
                 headers: { 'Accept': 'application/json' }
             }).done(function () {
                 $('#assign-success').removeClass('hidden').text('Staff assigned successfully!');
