@@ -224,6 +224,18 @@
                             <label for="edit-appointment-date" class="block text-sm font-medium text-gray-700 mb-2">Appointment Date & Time <span class="text-red-500">*</span></label>
                             <input type="datetime-local" id="edit-appointment-date" required
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <div id="edit-date-conflict-warning" class="hidden mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <p class="text-sm text-yellow-800">
+                                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                                    <span id="edit-conflict-message">You already have an appointment at this date and time.</span>
+                                </p>
+                            </div>
+                            <div id="edit-booked-times-info" class="hidden mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p class="text-sm text-blue-800 font-semibold mb-1">
+                                    <i class="fas fa-info-circle mr-2"></i>Already booked times for this date:
+                                </p>
+                                <ul id="edit-booked-times-list" class="text-sm text-blue-700 list-disc list-inside"></ul>
+                            </div>
                             <p class="mt-2 text-sm text-gray-500">
                                 <i class="fas fa-info-circle mr-1"></i>
                                 You can only edit pending appointments.
@@ -347,6 +359,7 @@
         let currentSearch = '';
         let currentStatusFilter = 'all';
         let searchDebounceTimer = null;
+        let bookedTimesForSelectedDate = []; // Track booked times for the selected date
 
         function loadAppointments() {
             $('#appointments-loading').show();
@@ -750,8 +763,132 @@
             ensureServicesLoaded().then(function() {
                 renderEditServices();
                 updateEditSummary();
+                setupDateConflictCheck();
                 showEditModal();
             });
+        }
+
+        // Setup date/time conflict checking for edit form
+        function setupDateConflictCheck() {
+            // Remove any existing event listeners
+            $('#edit-appointment-date').off('change.datetime-conflict');
+            
+            // Add change event listener
+            $('#edit-appointment-date').on('change.datetime-conflict', function() {
+                checkDateConflict();
+            });
+            
+            // Initial check if date is already set
+            const currentDate = $('#edit-appointment-date').val();
+            if (currentDate) {
+                checkDateConflict();
+            }
+        }
+
+        // Check if selected date/time conflicts with existing appointments
+        function checkDateConflict() {
+            const dtLocal = $('#edit-appointment-date').val();
+            if (!dtLocal || !editAppointment) {
+                hideDateConflictWarning();
+                hideBookedTimesInfo();
+                return;
+            }
+
+            // Extract date from datetime-local value (format: YYYY-MM-DDTHH:mm)
+            const selectedDate = dtLocal.split('T')[0];
+            const selectedTime = dtLocal.split('T')[1] || '';
+            
+            // Fetch user's appointments for the selected date
+            $.ajax({
+                url: `${getApiUrl()}/me/appointments`,
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                },
+                success: function(res) {
+                    const appointments = res && res.data && res.data.appointments ? res.data.appointments : [];
+                    bookedTimesForSelectedDate = [];
+                    
+                    // Filter appointments for the selected date (excluding cancelled and the current appointment being edited)
+                    const appointmentsForDate = appointments.filter(function(apt) {
+                        if (!apt.appointment_date) return false;
+                        if (String(apt.status || '').toLowerCase() === 'cancelled') return false;
+                        if (apt.id && editAppointment.id && String(apt.id) === String(editAppointment.id)) return false; // Exclude current appointment
+                        
+                        const aptDate = new Date(apt.appointment_date);
+                        const selectedDateObj = new Date(selectedDate + 'T00:00:00');
+                        
+                        // Check if appointment is on the selected date
+                        return aptDate.toISOString().split('T')[0] === selectedDateObj.toISOString().split('T')[0];
+                    });
+
+                    // Extract times from appointments on this date
+                    appointmentsForDate.forEach(function(apt) {
+                        if (apt.appointment_date) {
+                            const aptDate = new Date(apt.appointment_date);
+                            const timeStr = aptDate.toTimeString().substring(0, 5); // HH:mm format
+                            if (bookedTimesForSelectedDate.indexOf(timeStr) === -1) {
+                                bookedTimesForSelectedDate.push(timeStr);
+                            }
+                        }
+                    });
+
+                    // Show booked times info if there are any
+                    if (bookedTimesForSelectedDate.length > 0) {
+                        showBookedTimesInfo();
+                    } else {
+                        hideBookedTimesInfo();
+                    }
+
+                    // Check if selected time conflicts
+                    if (selectedTime) {
+                        const selectedTimeStr = selectedTime.substring(0, 5); // HH:mm format
+                        if (bookedTimesForSelectedDate.indexOf(selectedTimeStr) !== -1) {
+                            showDateConflictWarning();
+                        } else {
+                            hideDateConflictWarning();
+                        }
+                    } else {
+                        hideDateConflictWarning();
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Failed to check date conflicts:', xhr);
+                    // Don't block user if API call fails, but log error
+                }
+            });
+        }
+
+        function showDateConflictWarning() {
+            $('#edit-date-conflict-warning').removeClass('hidden');
+            $('#edit-appointment-date').addClass('border-red-500');
+        }
+
+        function hideDateConflictWarning() {
+            $('#edit-date-conflict-warning').addClass('hidden');
+            $('#edit-appointment-date').removeClass('border-red-500');
+        }
+
+        function showBookedTimesInfo() {
+            const list = $('#edit-booked-times-list');
+            list.empty();
+            
+            // Sort times
+            const sortedTimes = bookedTimesForSelectedDate.slice().sort();
+            
+            if (sortedTimes.length > 0) {
+                sortedTimes.forEach(function(time) {
+                    list.append(`<li>${time}</li>`);
+                });
+                $('#edit-booked-times-info').removeClass('hidden');
+            } else {
+                hideBookedTimesInfo();
+            }
+        }
+
+        function hideBookedTimesInfo() {
+            $('#edit-booked-times-info').addClass('hidden');
         }
 
         function showEditModal() {
@@ -762,6 +899,10 @@
             $('#edit-appointment-modal').addClass('hidden');
             editAppointment = null;
             editSelectedServiceIds = [];
+            bookedTimesForSelectedDate = [];
+            hideDateConflictWarning();
+            hideBookedTimesInfo();
+            $('#edit-appointment-date').removeClass('border-red-500');
         }
 
         function renderEditServices() {
@@ -878,6 +1019,16 @@
             if (isNaN(dateObj.getTime()) || dateObj.getTime() <= Date.now()) {
                 showAlert('error', 'Appointment date must be in the future.');
                 return false;
+            }
+
+            // Check for time conflict
+            const selectedTime = dtLocal.split('T')[1] || '';
+            if (selectedTime) {
+                const selectedTimeStr = selectedTime.substring(0, 5); // HH:mm format
+                if (bookedTimesForSelectedDate.indexOf(selectedTimeStr) !== -1) {
+                    showAlert('error', 'You already have an appointment scheduled for this date and time. Please select a different time.');
+                    return false;
+                }
             }
 
             return true;
