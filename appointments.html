@@ -60,6 +60,11 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+        .time-slot.selected {
+            background-color: #1f2937;
+            border-color: #1f2937;
+            color: white;
+        }
     </style>
 </head>
 <body class="font-sans antialiased bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
@@ -221,24 +226,23 @@
                         </div>
 
                         <div class="mb-5">
-                            <label for="edit-appointment-date" class="block text-sm font-medium text-gray-700 mb-2">Appointment Date & Time <span class="text-red-500">*</span></label>
-                            <input type="datetime-local" id="edit-appointment-date" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <div id="edit-date-conflict-warning" class="hidden mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <p class="text-sm text-yellow-800">
-                                    <i class="fas fa-exclamation-triangle mr-2"></i>
-                                    <span id="edit-conflict-message">You already have an appointment at this date and time.</span>
-                                </p>
-                            </div>
-                            <div id="edit-booked-times-info" class="hidden mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                <p class="text-sm text-blue-800 font-semibold mb-1">
-                                    <i class="fas fa-info-circle mr-2"></i>Already booked times for this date:
-                                </p>
-                                <ul id="edit-booked-times-list" class="text-sm text-blue-700 list-disc list-inside"></ul>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Appointment Date & Time <span class="text-red-500">*</span></label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="edit-appointment-date" class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                                    <input type="date" id="edit-appointment-date" required
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Available Time Slots</label>
+                                    <div id="edit-time-slots-container">
+                                        <p class="text-sm text-gray-500">Select a date and services first</p>
+                                    </div>
+                                </div>
                             </div>
                             <p class="mt-2 text-sm text-gray-500">
                                 <i class="fas fa-info-circle mr-1"></i>
-                                You can only edit pending appointments.
+                                Shop hours: 8:00 AM - 6:00 PM. You can only edit pending appointments.
                             </p>
                         </div>
 
@@ -359,7 +363,10 @@
         let currentSearch = '';
         let currentStatusFilter = 'all';
         let searchDebounceTimer = null;
-        let bookedTimesForSelectedDate = []; // Track booked times for the selected date
+        let editSelectedDate = null;
+        let editSelectedTimeSlot = null;
+        let editAvailableSlots = [];
+        let editBookedSlots = []; // Track slots that are already booked for edit form
 
         function loadAppointments() {
             $('#appointments-loading').show();
@@ -753,142 +760,314 @@
 
             $('#edit-notes').val(a.notes || '');
 
-            const dtLocal = toDatetimeLocal(a.appointment_date);
-            if (dtLocal) {
-                $('#edit-appointment-date').val(dtLocal);
+            // Extract date from appointment_date
+            if (a.appointment_date) {
+                const aptDate = new Date(a.appointment_date);
+                if (!isNaN(aptDate.getTime())) {
+                    const dateStr = aptDate.toISOString().split('T')[0]; // YYYY-MM-DD
+                    editSelectedDate = dateStr;
+                    $('#edit-appointment-date').val(dateStr);
+                    
+                    // Store the original time slot for pre-selection
+                    const timeStr = aptDate.toTimeString().substring(0, 5); // HH:mm
+                    const datetimeStr = dateStr + 'T' + timeStr + ':00';
+                    editSelectedTimeSlot = datetimeStr;
+                } else {
+                    editSelectedDate = null;
+                    editSelectedTimeSlot = null;
+                    $('#edit-appointment-date').val('');
+                }
             } else {
+                editSelectedDate = null;
+                editSelectedTimeSlot = null;
                 $('#edit-appointment-date').val('');
             }
 
             ensureServicesLoaded().then(function() {
                 renderEditServices();
                 updateEditSummary();
-                setupDateConflictCheck();
+                setupEditTimeSlotSystem();
                 showEditModal();
             });
         }
 
-        // Setup date/time conflict checking for edit form
-        function setupDateConflictCheck() {
+        // Setup time slot system for edit form
+        function setupEditTimeSlotSystem() {
             // Remove any existing event listeners
-            $('#edit-appointment-date').off('change.datetime-conflict');
+            $('#edit-appointment-date').off('change.edit-time-slots');
+            $('#edit-services-container input[type="checkbox"]').off('change.edit-time-slots');
             
-            // Add change event listener
-            $('#edit-appointment-date').on('change.datetime-conflict', function() {
-                checkDateConflict();
+            // Add change event listener for date
+            $('#edit-appointment-date').on('change.edit-time-slots', function() {
+                editSelectedDate = $(this).val();
+                editSelectedTimeSlot = null;
+                if (editSelectedDate && editSelectedServiceIds.length > 0) {
+                    loadEditAvailableSlots();
+                } else {
+                    $('#edit-time-slots-container').html('<p class="text-sm text-gray-500">Select a date and services first</p>');
+                }
             });
             
-            // Initial check if date is already set
-            const currentDate = $('#edit-appointment-date').val();
-            if (currentDate) {
-                checkDateConflict();
+            // Add change event listener for services
+            $('#edit-services-container').on('change.edit-time-slots', 'input[type="checkbox"]', function() {
+                if (editSelectedDate && editSelectedServiceIds.length > 0) {
+                    loadEditAvailableSlots();
+                } else {
+                    $('#edit-time-slots-container').html('<p class="text-sm text-gray-500">Select a date and services first</p>');
+                }
+            });
+            
+            // Load time slots if date and services are already set
+            if (editSelectedDate && editSelectedServiceIds.length > 0) {
+                loadEditAvailableSlots();
             }
         }
 
-        // Check if selected date/time conflicts with existing appointments
-        function checkDateConflict() {
-            const dtLocal = $('#edit-appointment-date').val();
-            if (!dtLocal || !editAppointment) {
-                hideDateConflictWarning();
-                hideBookedTimesInfo();
+        // Load available time slots for edit form
+        function loadEditAvailableSlots() {
+            if (!editSelectedDate || editSelectedServiceIds.length === 0) {
                 return;
             }
 
-            // Extract date from datetime-local value (format: YYYY-MM-DDTHH:mm)
-            const selectedDate = dtLocal.split('T')[0];
-            const selectedTime = dtLocal.split('T')[1] || '';
-            
-            // Fetch user's appointments for the selected date
+            const apiUrl = getApiUrl();
+            const serviceIds = editSelectedServiceIds.map(function(id) {
+                const service = allServices.find(function(s) { return s.id === id; });
+                return service ? service.id : null;
+            }).filter(Boolean);
+
+            if (serviceIds.length === 0) {
+                $('#edit-time-slots-container').html('<p class="text-sm text-gray-500">Select at least one service</p>');
+                return;
+            }
+
+            $('#edit-time-slots-container').html('<div class="text-center py-2 text-blue-600"><i class="fas fa-spinner fa-spin mr-2"></i>Loading available slots...</div>');
+
+            // Reset booked slots
+            editBookedSlots = [];
+
+            // First, load available slots from API
             $.ajax({
-                url: `${getApiUrl()}/me/appointments`,
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${getAuthToken()}`,
-                },
-                success: function(res) {
-                    const appointments = res && res.data && res.data.appointments ? res.data.appointments : [];
-                    bookedTimesForSelectedDate = [];
-                    
-                    // Filter appointments for the selected date (excluding cancelled and the current appointment being edited)
-                    const appointmentsForDate = appointments.filter(function(apt) {
-                        if (!apt.appointment_date) return false;
-                        if (String(apt.status || '').toLowerCase() === 'cancelled') return false;
-                        if (apt.id && editAppointment.id && String(apt.id) === String(editAppointment.id)) return false; // Exclude current appointment
-                        
-                        const aptDate = new Date(apt.appointment_date);
-                        const selectedDateObj = new Date(selectedDate + 'T00:00:00');
-                        
-                        // Check if appointment is on the selected date
-                        return aptDate.toISOString().split('T')[0] === selectedDateObj.toISOString().split('T')[0];
-                    });
-
-                    // Extract times from appointments on this date
-                    appointmentsForDate.forEach(function(apt) {
-                        if (apt.appointment_date) {
-                            const aptDate = new Date(apt.appointment_date);
-                            const timeStr = aptDate.toTimeString().substring(0, 5); // HH:mm format
-                            if (bookedTimesForSelectedDate.indexOf(timeStr) === -1) {
-                                bookedTimesForSelectedDate.push(timeStr);
-                            }
-                        }
-                    });
-
-                    // Show booked times info if there are any
-                    if (bookedTimesForSelectedDate.length > 0) {
-                        showBookedTimesInfo();
+                url: `${apiUrl}/public/available-slots`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    date: editSelectedDate,
+                    service_ids: serviceIds
+                }),
+                success: function(response) {
+                    if (response.success && response.data) {
+                        editAvailableSlots = response.data.slots || [];
+                        // Then load existing appointments to check for booked slots
+                        loadEditBookedAppointments();
                     } else {
-                        hideBookedTimesInfo();
-                    }
-
-                    // Check if selected time conflicts
-                    if (selectedTime) {
-                        const selectedTimeStr = selectedTime.substring(0, 5); // HH:mm format
-                        if (bookedTimesForSelectedDate.indexOf(selectedTimeStr) !== -1) {
-                            showDateConflictWarning();
-                        } else {
-                            hideDateConflictWarning();
-                        }
-                    } else {
-                        hideDateConflictWarning();
+                        $('#edit-time-slots-container').html('<p class="text-sm text-red-600">No available slots for this date.</p>');
                     }
                 },
-                error: function(xhr) {
-                    console.error('Failed to check date conflicts:', xhr);
-                    // Don't block user if API call fails, but log error
+                error: function(xhr, status, error) {
+                    console.error('Error loading slots:', error);
+                    let errorMsg = 'Failed to load available time slots.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    $('#edit-time-slots-container').html(`<p class="text-sm text-red-600">${errorMsg}</p>`);
                 }
             });
         }
 
-        function showDateConflictWarning() {
-            $('#edit-date-conflict-warning').removeClass('hidden');
-            $('#edit-appointment-date').addClass('border-red-500');
-        }
+        // Load existing appointments for the selected date to identify booked slots (for edit form)
+        function loadEditBookedAppointments() {
+            const apiUrl = getApiUrl();
+            const token = getAuthToken();
 
-        function hideDateConflictWarning() {
-            $('#edit-date-conflict-warning').addClass('hidden');
-            $('#edit-appointment-date').removeClass('border-red-500');
-        }
-
-        function showBookedTimesInfo() {
-            const list = $('#edit-booked-times-list');
-            list.empty();
-            
-            // Sort times
-            const sortedTimes = bookedTimesForSelectedDate.slice().sort();
-            
-            if (sortedTimes.length > 0) {
-                sortedTimes.forEach(function(time) {
-                    list.append(`<li>${time}</li>`);
+            if (token) {
+                $.ajax({
+                    url: `${apiUrl}/me/appointments`,
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    success: function(response) {
+                        if (response.success && response.data && response.data.appointments) {
+                            const appointments = response.data.appointments;
+                            
+                            // Filter appointments for the selected date (excluding cancelled and current appointment)
+                            appointments.forEach(function(apt) {
+                                if (!apt.appointment_date) return;
+                                if (String(apt.status || '').toLowerCase() === 'cancelled') return;
+                                if (apt.id && editAppointment.id && String(apt.id) === String(editAppointment.id)) return; // Exclude current appointment
+                                
+                                const aptDate = new Date(apt.appointment_date);
+                                const selectedDateObj = new Date(editSelectedDate + 'T00:00:00');
+                                
+                                // Check if appointment is on the selected date
+                                if (aptDate.toISOString().split('T')[0] === selectedDateObj.toISOString().split('T')[0]) {
+                                    // Extract time from appointment_date
+                                    const aptTime = aptDate.toTimeString().substring(0, 5); // HH:mm format
+                                    if (editBookedSlots.indexOf(aptTime) === -1) {
+                                        editBookedSlots.push(aptTime);
+                                    }
+                                    
+                                    // Also check if appointment has an end_time and mark that range as booked
+                                    if (apt.end_time) {
+                                        const endTime = new Date(apt.end_time);
+                                        const endTimeStr = endTime.toTimeString().substring(0, 5);
+                                        // Mark all 30-minute slots between start and end as booked
+                                        markEditTimeRangeAsBooked(aptTime, endTimeStr);
+                                    }
+                                }
+                            });
+                        }
+                        
+                        renderEditTimeSlots();
+                    },
+                    error: function(xhr) {
+                        console.warn('Could not load user appointments:', xhr);
+                        renderEditTimeSlots();
+                    }
                 });
-                $('#edit-booked-times-info').removeClass('hidden');
             } else {
-                hideBookedTimesInfo();
+                renderEditTimeSlots();
             }
         }
 
-        function hideBookedTimesInfo() {
-            $('#edit-booked-times-info').addClass('hidden');
+        // Mark a time range as booked (for edit form)
+        function markEditTimeRangeAsBooked(startTime, endTime) {
+            const start = parseEditTime(startTime);
+            const end = parseEditTime(endTime);
+            
+            if (!start || !end) return;
+            
+            let current = new Date(start);
+            while (current < end) {
+                const timeStr = current.toTimeString().substring(0, 5);
+                if (editBookedSlots.indexOf(timeStr) === -1) {
+                    editBookedSlots.push(timeStr);
+                }
+                // Move to next 30-minute slot
+                current.setMinutes(current.getMinutes() + 30);
+            }
+        }
+
+        // Parse time string (HH:mm) to Date object (for edit form)
+        function parseEditTime(timeStr) {
+            if (!timeStr || typeof timeStr !== 'string') return null;
+            const parts = timeStr.split(':');
+            if (parts.length < 2) return null;
+            
+            const date = new Date();
+            date.setHours(parseInt(parts[0], 10));
+            date.setMinutes(parseInt(parts[1], 10));
+            date.setSeconds(0);
+            date.setMilliseconds(0);
+            return date;
+        }
+
+        // Check if a slot is booked (for edit form)
+        function isEditSlotBooked(slotDatetime) {
+            if (!slotDatetime) return false;
+            
+            // Extract time from slot datetime
+            let timeStr = '';
+            if (slotDatetime.includes('T')) {
+                timeStr = slotDatetime.split('T')[1].substring(0, 5);
+            } else if (slotDatetime.includes(' ')) {
+                timeStr = slotDatetime.split(' ')[1].substring(0, 5);
+            } else {
+                timeStr = slotDatetime.substring(0, 5);
+            }
+            
+            return editBookedSlots.indexOf(timeStr) !== -1;
+        }
+
+        // Render time slots for edit form
+        function renderEditTimeSlots() {
+            const container = $('#edit-time-slots-container');
+            container.empty();
+
+            if (editAvailableSlots.length === 0) {
+                container.html('<p class="text-sm text-red-600">No available time slots for the selected date and services.</p>');
+                return;
+            }
+
+            const slotsGrid = $('<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2"></div>');
+
+            editAvailableSlots.forEach(function(slot) {
+                const slotDatetime = slot.datetime || slot.time;
+                let timeStr = '';
+                if (slotDatetime.includes('T')) {
+                    timeStr = slotDatetime.split('T')[1].substring(0, 5);
+                } else if (slotDatetime.includes(' ')) {
+                    timeStr = slotDatetime.split(' ')[1].substring(0, 5);
+                } else {
+                    timeStr = slotDatetime.substring(0, 5);
+                }
+                
+                // Check if this slot is already booked
+                const isBooked = isEditSlotBooked(slotDatetime);
+                
+                // Check if this is the currently selected time slot
+                // Normalize both to compare (extract just date and time without seconds)
+                const normalizeSlot = function(dt) {
+                    if (!dt) return '';
+                    // Handle different formats: YYYY-MM-DDTHH:mm:ss, YYYY-MM-DD HH:mm:ss, etc.
+                    let normalized = dt.toString().replace(/[T\s]/, 'T');
+                    // Remove seconds and milliseconds
+                    normalized = normalized.replace(/:\d{2}(\.\d{3})?Z?$/, '');
+                    // Ensure T separator
+                    if (normalized.indexOf('T') === -1 && normalized.length > 10) {
+                        normalized = normalized.substring(0, 10) + 'T' + normalized.substring(10);
+                    }
+                    return normalized.substring(0, 16); // YYYY-MM-DDTHH:mm
+                };
+                const slotNormalized = normalizeSlot(slotDatetime);
+                const selectedNormalized = normalizeSlot(editSelectedTimeSlot);
+                const isSelected = editSelectedTimeSlot && slotNormalized === selectedNormalized;
+                
+                // Determine button classes and disabled state
+                const baseClasses = 'time-slot px-3 py-2 text-sm border-2 rounded-lg transition';
+                const normalClasses = 'border-gray-300 hover:border-gray-400';
+                const bookedClasses = 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50';
+                const selectedClasses = 'border-indigo-500 bg-indigo-100 text-indigo-800 font-semibold';
+                let classes = '';
+                if (isBooked) {
+                    classes = `${baseClasses} ${bookedClasses}`;
+                } else if (isSelected) {
+                    classes = `${baseClasses} ${selectedClasses}`;
+                } else {
+                    classes = `${baseClasses} ${normalClasses}`;
+                }
+                
+                const slotBtn = $(`
+                    <button type="button" class="${classes}" data-time="${slotDatetime}" ${isBooked ? 'disabled title="This time slot is already booked"' : ''}>
+                        ${timeStr}${isBooked ? ' <i class="fas fa-lock text-xs"></i>' : ''}
+                    </button>
+                `);
+
+                if (!isBooked) {
+                    slotBtn.on('click', function() {
+                        $('.time-slot').removeClass('selected');
+                        $(this).addClass('selected');
+                        editSelectedTimeSlot = $(this).data('time');
+                    });
+                    
+                    // Pre-select if this matches the current appointment time
+                    if (isSelected) {
+                        slotBtn.addClass('selected');
+                    }
+                } else {
+                    slotBtn.css('pointer-events', 'none');
+                }
+
+                slotsGrid.append(slotBtn);
+            });
+
+            container.append(slotsGrid);
+            
+            // Show message if there are booked slots
+            if (editBookedSlots.length > 0) {
+                container.append('<p class="mt-2 text-xs text-gray-500"><i class="fas fa-info-circle mr-1"></i>Locked slots are already booked</p>');
+            }
         }
 
         function showEditModal() {
@@ -899,10 +1078,11 @@
             $('#edit-appointment-modal').addClass('hidden');
             editAppointment = null;
             editSelectedServiceIds = [];
-            bookedTimesForSelectedDate = [];
-            hideDateConflictWarning();
-            hideBookedTimesInfo();
-            $('#edit-appointment-date').removeClass('border-red-500');
+            editSelectedDate = null;
+            editSelectedTimeSlot = null;
+            editAvailableSlots = [];
+            editBookedSlots = [];
+            $('#edit-time-slots-container').html('<p class="text-sm text-gray-500">Select a date and services first</p>');
         }
 
         function renderEditServices() {
@@ -946,6 +1126,12 @@
                         editSelectedServiceIds = editSelectedServiceIds.filter(function(x) { return x !== id; });
                     }
                     updateEditSummary();
+                    // Reload time slots if date is selected
+                    if (editSelectedDate && editSelectedServiceIds.length > 0) {
+                        loadEditAvailableSlots();
+                    } else {
+                        $('#edit-time-slots-container').html('<p class="text-sm text-gray-500">Select a date and services first</p>');
+                    }
                 });
 
                 container.append(card);
@@ -1009,26 +1195,27 @@
                 return false;
             }
 
-            const dtLocal = $('#edit-appointment-date').val();
-            if (!dtLocal) {
-                showAlert('error', 'Please select an appointment date and time.');
+            if (!editSelectedDate) {
+                showAlert('error', 'Please select an appointment date.');
                 return false;
             }
 
-            const dateObj = new Date(dtLocal);
+            if (!editSelectedTimeSlot) {
+                showAlert('error', 'Please select an available time slot.');
+                return false;
+            }
+
+            // Check if selected time slot is booked
+            if (isEditSlotBooked(editSelectedTimeSlot)) {
+                showAlert('error', 'You already have an appointment scheduled for this date and time. Please select a different time.');
+                return false;
+            }
+
+            // Validate date is in the future
+            const dateObj = new Date(editSelectedTimeSlot);
             if (isNaN(dateObj.getTime()) || dateObj.getTime() <= Date.now()) {
                 showAlert('error', 'Appointment date must be in the future.');
                 return false;
-            }
-
-            // Check for time conflict
-            const selectedTime = dtLocal.split('T')[1] || '';
-            if (selectedTime) {
-                const selectedTimeStr = selectedTime.substring(0, 5); // HH:mm format
-                if (bookedTimesForSelectedDate.indexOf(selectedTimeStr) !== -1) {
-                    showAlert('error', 'You already have an appointment scheduled for this date and time. Please select a different time.');
-                    return false;
-                }
             }
 
             return true;
@@ -1042,10 +1229,11 @@
             const btn = $('#edit-appointment-save');
             btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Saving...');
 
-            const dtLocal = $('#edit-appointment-date').val();
+            // Convert selected time slot to API format
+            const appointmentDateTime = editSelectedTimeSlot.replace('T', ' ');
             const payload = {
                 vehicle_id: (editAppointment.vehicle && editAppointment.vehicle.id) ? editAppointment.vehicle.id : editAppointment.vehicle_id,
-                appointment_date: toApiDatetime(dtLocal),
+                appointment_date: appointmentDateTime.length === 16 ? appointmentDateTime + ':00' : appointmentDateTime,
                 service_ids: editSelectedServiceIds.slice(),
                 notes: $('#edit-notes').val() || null
             };
