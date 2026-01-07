@@ -501,6 +501,11 @@
                 return;
             }
             
+            // Scroll to top of the page
+            global.jQuery('html, body').animate({
+                scrollTop: 0
+            }, 300);
+            
             var id = global.jQuery(this).data('id');
             setLoading(true);
             fetchAppointment(id).done(function (fresh) {
