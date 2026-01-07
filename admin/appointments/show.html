@@ -148,7 +148,10 @@
                 assignStaff();
             });
 
-            $('#cancel-appointment-btn').on('click', function () {
+            // Use event delegation to ensure handler works even if button is dynamically shown/hidden
+            $(document).on('click', '#cancel-appointment-btn', function (e) {
+                e.preventDefault();
+                console.log('Cancel button clicked');
                 if (confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) {
                     cancelAppointment();
                 }
@@ -294,27 +297,61 @@
         }
 
         function cancelAppointment() {
+            console.log('cancelAppointment called, APPT_ID:', APPT_ID);
             $('#cancel-error').addClass('hidden').text('');
             $('#cancel-success').addClass('hidden').text('');
+
+            if (!APPT_ID) {
+                $('#cancel-error').removeClass('hidden').text('Appointment ID is missing.');
+                return;
+            }
 
             var $btn = $('#cancel-appointment-btn');
             $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Cancelling...');
 
+            var url = Api.getBaseUrl() + '/admin/appointments/' + encodeURIComponent(APPT_ID) + '/status';
+            console.log('Sending PATCH request to:', url);
+
             Api.request({
-                url: Api.getBaseUrl() + '/admin/appointments/' + encodeURIComponent(APPT_ID) + '/status',
+                url: url,
                 method: 'PATCH',
                 contentType: 'application/json',
                 processData: false,
                 data: JSON.stringify({ status: 'cancelled' }),
                 headers: { 'Accept': 'application/json' }
             }).done(function (res) {
-                $('#cancel-success').removeClass('hidden').text('Appointment cancelled successfully!');
-                setTimeout(function () {
-                    loadAppointment();
-                }, 1000);
+                console.log('Cancel appointment response:', res);
+                if (res && res.success) {
+                    $('#cancel-success').removeClass('hidden').text(res.message || 'Appointment cancelled successfully!');
+                    setTimeout(function () {
+                        loadAppointment();
+                    }, 1000);
+                } else {
+                    $('#cancel-error').removeClass('hidden').text((res && res.message) ? res.message : 'Failed to cancel appointment.');
+                }
             }).fail(function (xhr) {
+                console.error('Cancel appointment failed:', xhr);
                 var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
-                $('#cancel-error').removeClass('hidden').text((json && json.message) ? json.message : 'Failed to cancel appointment.');
+                var errorMsg = 'Failed to cancel appointment.';
+                if (json) {
+                    if (json.message) {
+                        errorMsg = json.message;
+                    } else if (json.errors && typeof json.errors === 'object') {
+                        var errorKeys = Object.keys(json.errors);
+                        if (errorKeys.length > 0) {
+                            errorMsg = json.errors[errorKeys[0]][0] || errorMsg;
+                        }
+                    }
+                } else if (xhr.status === 0) {
+                    errorMsg = 'Network error. Please check your connection.';
+                } else if (xhr.status === 404) {
+                    errorMsg = 'Appointment not found.';
+                } else if (xhr.status === 403) {
+                    errorMsg = 'You do not have permission to cancel this appointment.';
+                } else if (xhr.status === 500) {
+                    errorMsg = 'Server error. Please try again later.';
+                }
+                $('#cancel-error').removeClass('hidden').text(errorMsg);
             }).always(function () {
                 $btn.prop('disabled', false).html('<i class="fas fa-times mr-2"></i>Cancel Appointment');
             });

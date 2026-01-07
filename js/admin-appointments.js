@@ -527,7 +527,10 @@
             assignStaff();
         });
 
-        global.jQuery('#cancel-appointment-btn').on('click', function () {
+        // Use event delegation to ensure handler works even if button is dynamically shown/hidden
+        global.jQuery(document).on('click', '#cancel-appointment-btn', function (e) {
+            e.preventDefault();
+            console.log('Cancel button clicked');
             if (confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) {
                 cancelAppointment();
             }
@@ -535,11 +538,15 @@
     }
 
     function cancelAppointment() {
+        console.log('cancelAppointment called');
         var appointment = state.selectedAppointment;
         if (!appointment) {
+            console.error('No appointment selected');
             showAlert('error', 'No appointment selected.');
             return;
         }
+
+        console.log('Appointment selected:', appointment.id, 'Status:', appointment.status);
 
         var status = (appointment.status || '').toLowerCase();
         if (status === 'cancelled') {
@@ -550,14 +557,18 @@
         var $btn = global.jQuery('#cancel-appointment-btn');
         $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Cancelling...');
 
+        var url = Api.getBaseUrl() + '/admin/appointments/' + appointment.id + '/status';
+        console.log('Sending PATCH request to:', url);
+
         Api.request({
-            url: Api.getBaseUrl() + '/admin/appointments/' + appointment.id + '/status',
+            url: url,
             method: 'PATCH',
             contentType: 'application/json',
             processData: false,
             data: JSON.stringify({ status: 'cancelled' }),
             headers: { 'Accept': 'application/json' }
         }).done(function (res) {
+            console.log('Cancel appointment response:', res);
             if (res && res.success && res.data && res.data.appointment) {
                 var updated = res.data.appointment;
 
@@ -569,14 +580,16 @@
                     }
                 }
 
-                showAlert('success', 'Appointment cancelled successfully.');
+                showAlert('success', res.message || 'Appointment cancelled successfully.');
                 applySearchFilterAndRender();
                 renderAppointmentDetails(updated);
                 return;
             }
 
-            showAlert('error', (res && res.message) ? res.message : 'Failed to cancel appointment.');
+            var errorMsg = (res && res.message) ? res.message : 'Failed to cancel appointment.';
+            showAlert('error', errorMsg);
         }).fail(function (xhr) {
+            console.error('Cancel appointment failed:', xhr);
             if (xhr && xhr.status === 401) {
                 return;
             }
@@ -584,10 +597,30 @@
             var msg = 'Failed to cancel appointment.';
             try {
                 var parsed = xhr.responseJSON;
-                if (parsed && parsed.message) {
-                    msg = parsed.message;
+                if (parsed) {
+                    if (parsed.message) {
+                        msg = parsed.message;
+                    } else if (parsed.errors && typeof parsed.errors === 'object') {
+                        var errorKeys = Object.keys(parsed.errors);
+                        if (errorKeys.length > 0) {
+                            msg = parsed.errors[errorKeys[0]][0] || msg;
+                        }
+                    }
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.error('Error parsing response:', e);
+            }
+            
+            if (xhr.status === 0) {
+                msg = 'Network error. Please check your connection.';
+            } else if (xhr.status === 404) {
+                msg = 'Appointment not found.';
+            } else if (xhr.status === 403) {
+                msg = 'You do not have permission to cancel this appointment.';
+            } else if (xhr.status === 500) {
+                msg = 'Server error. Please try again later.';
+            }
+            
             showAlert('error', msg);
         }).always(function () {
             $btn.prop('disabled', false).html('<i class="fas fa-times mr-2"></i>Cancel Appointment');
