@@ -275,7 +275,7 @@
             var user = Auth.getUser();
             $('#role-text').text(Auth.getRole() || '-');
             $('#user-text').text(user ? (user.username || user.email || user.id) : '-');
-            $('#user-name').text(user ? (user.name || user.username || user.email || user.id) : 'User');
+            $('#user-name').text(user ? (user.username || user.name || user.email || user.id) : 'User');
 
             loadAdminDashboard();
         });

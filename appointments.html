@@ -272,6 +272,17 @@
             $('nav a[href="login.html"]').hide();
             $('nav a[href="register.html"]').hide();
 
+            // Set username in dropdown
+            var currentUser = null;
+            try {
+                const rawUser = localStorage.getItem('currentUser');
+                currentUser = rawUser ? JSON.parse(rawUser) : null;
+            } catch (e) {}
+            
+            if (currentUser && $('#user-name').length) {
+                $('#user-name').text(currentUser.username || currentUser.name || 'User');
+            }
+
             const navActions = $('nav div.flex.items-center.space-x-3').first();
             if (navActions.length && navActions.find('#profile-link').length === 0) {
                 navActions.append(`

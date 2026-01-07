@@ -353,7 +353,7 @@
             }
 
             currentUser = Auth.getUser();
-            $('#user-name').text(currentUser ? (currentUser.name || currentUser.username || currentUser.email || currentUser.id) : 'User');
+            $('#user-name').text(currentUser ? (currentUser.username || currentUser.name || currentUser.email || currentUser.id) : 'User');
 
             // Show create button for admin and super admin
             var userRole = (currentUser && currentUser.role) ? currentUser.role.toLowerCase() : '';

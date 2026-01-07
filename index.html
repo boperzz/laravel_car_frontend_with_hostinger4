@@ -369,8 +369,8 @@
             var currentUser = Auth.getUser();
             
             if (currentUser) {
-                // Update username display
-                var displayName = currentUser.name || currentUser.username || 'User';
+                // Update username display - prioritize username
+                var displayName = currentUser.username || currentUser.name || 'User';
                 $('#user-name').text(displayName);
             } else {
                 // If not in localStorage, fetch from API
@@ -385,7 +385,7 @@
                         const user = res && res.data && res.data.user;
                         if (user) {
                             localStorage.setItem('currentUser', JSON.stringify(user));
-                            var displayName = user.name || user.username || 'User';
+                            var displayName = user.username || user.name || 'User';
                             $('#user-name').text(displayName);
                         }
                     },

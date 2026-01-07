@@ -311,7 +311,7 @@
                 $('#last_name').val(user.last_name || '');
                 $('#email').val(user.email || '');
 
-                $('#user-name').text(user.name || user.username || user.email || user.id || 'User');
+                $('#user-name').text(user.username || user.name || user.email || user.id || 'User');
 
                 var avatarUrl = user.profile_picture || getDefaultProfileImage(user);
                 $('#profile-img').attr('src', avatarUrl).removeClass('hidden');
@@ -337,7 +337,7 @@
                 var user = res && res.data && res.data.user;
                 if (user) {
                     localStorage.setItem('currentUser', JSON.stringify(user));
-                    $('#user-name').text(user.name || user.username || user.email || user.id || 'User');
+                    $('#user-name').text(user.username || user.name || user.email || user.id || 'User');
 
                     var avatarUrl = user.profile_picture || getDefaultProfileImage(user);
                     $('#profile-img').attr('src', avatarUrl).removeClass('hidden');

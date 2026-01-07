@@ -441,6 +441,18 @@
             }
 
             setupNavAuth();
+            
+            // Set username in dropdown
+            var currentUser = null;
+            try {
+                const rawUser = localStorage.getItem('currentUser');
+                currentUser = rawUser ? JSON.parse(rawUser) : null;
+            } catch (e) {}
+            
+            if (currentUser && $('#user-name').length) {
+                $('#user-name').text(currentUser.username || currentUser.name || 'User');
+            }
+            
             loadServices();
             loadMyVehicles();
             setupEventListeners();

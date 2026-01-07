@@ -162,7 +162,7 @@
             }
 
             var currentUser = Auth.getUser();
-            $('#user-name').text(currentUser ? (currentUser.name || currentUser.username || currentUser.email || currentUser.id) : 'User');
+            $('#user-name').text(currentUser ? (currentUser.username || currentUser.name || currentUser.email || currentUser.id) : 'User');
 
             loadStaff();
         });
