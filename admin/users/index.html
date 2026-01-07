@@ -223,6 +223,66 @@
         </div>
     </div>
 
+    <!-- Edit User Modal -->
+    <div id="edit-user-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" onclick="closeEditUserModal()">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold mb-4">Edit User</h3>
+                <div id="edit-user-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
+                <form id="edit-user-form" class="space-y-4">
+                    <input type="hidden" id="edit-user-id" />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+                            <input type="text" name="edit_username" id="edit-username" required class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                            <input type="email" name="edit_email" id="edit-email" required class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                            <input type="text" name="edit_name" id="edit-name" required class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                            <input type="text" name="edit_middle_name" id="edit-middle-name" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                            <input type="text" name="edit_last_name" id="edit-last-name" required class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                            <select name="edit_role" id="edit-role" required class="w-full border rounded-lg px-3 py-2">
+                                <option value="admin">Admin</option>
+                                <option value="staff">Staff</option>
+                                <option value="customer">Customer</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">New Password (optional)</label>
+                            <input type="password" name="edit_password" id="edit-password" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                            <input type="password" name="edit_password_confirmation" id="edit-password-confirmation" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500">Leave password fields blank to keep the current password.</p>
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="closeEditUserModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Create User Modal -->
     <div id="create-user-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" onclick="closeCreateUserModal()">
         <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
@@ -291,6 +351,7 @@
         var currentRoleFilter = 'all';
         var currentSearch = '';
         var SEARCH_DEBOUNCE_TIMER = null;
+        var currentUsers = [];
 
         $(function () {
             if (!RoleGuard.requireRole(['admin', 'super_admin'])) {
@@ -438,6 +499,21 @@
             return false;
         }
 
+        function canEdit(user) {
+            if (!currentUser) return false;
+            if (currentUser.id === user.id) return false; // Cannot edit self here
+
+            var currentRole = (currentUser.role || '').toLowerCase();
+            var userRole = (user.role || '').toLowerCase();
+
+            // Super admin can edit admin, staff, and customer (but not super_admin)
+            if (currentRole === 'super_admin') {
+                return userRole === 'admin' || userRole === 'staff' || userRole === 'customer';
+            }
+
+            return false;
+        }
+
         function loadUsers() {
             $('#users-loading').removeClass('hidden');
             $('#users-error').addClass('hidden').text('');
@@ -456,6 +532,8 @@
             }).done(function (res) {
                 var items = res && res.data && res.data.users ? res.data.users : [];
                 var pagination = res && res.data && res.data.pagination ? res.data.pagination : null;
+
+                currentUsers = items || [];
 
                 if (!items.length) {
                     $('#users-tbody').html('<tr><td colspan="4" class="px-6 py-4 text-center">No users found.</td></tr>');
@@ -476,6 +554,11 @@
                             '</span>' +
                             '</td>' +
                             '<td class="px-6 py-4 whitespace-nowrap text-right">';
+
+                        // Edit button (super admin editing admin/staff/customer)
+                        if (!isCurrentUser && canEdit(user)) {
+                            html += '<button data-id="' + escapeHtml(user.id) + '" class="btn-edit border-2 border-gray-400 bg-transparent hover:bg-gray-700 text-gray-700 hover:text-white px-3 py-1 rounded transition text-sm font-medium mr-2">Edit</button>';
+                        }
 
                         // Promotion buttons
                         if (!isCurrentUser) {
@@ -559,6 +642,18 @@
             showDeletionModal(id, name);
         });
 
+        $(document).on('click', '.btn-edit', function () {
+            var id = $(this).data('id');
+            if (!id || !currentUsers || !currentUsers.length) return;
+
+            var user = currentUsers.find(function (u) {
+                return String(u.id) === String(id);
+            });
+            if (!user) return;
+
+            showEditUserModal(user);
+        });
+
         $('#promotion-confirm-btn').on('click', function () {
             if (!promotionUserId || !promotionNewRole) return;
 
@@ -590,6 +685,105 @@
             }).fail(function (xhr) {
                 var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
                 alert((json && json.message) ? json.message : 'Failed to delete user.');
+            });
+        });
+
+        function showEditUserModal(user) {
+            $('#edit-user-id').val(user.id);
+            $('#edit-username').val(user.username || '');
+            $('#edit-email').val(user.email || '');
+            $('#edit-name').val(user.name || '');
+            $('#edit-middle-name').val(user.middle_name || '');
+            $('#edit-last-name').val(user.last_name || '');
+
+            var role = (user.role || '').toLowerCase();
+            if (role === 'super_admin') {
+                // Should not happen because we don't show edit for super_admin, but guard anyway
+                role = 'admin';
+            }
+            if (role !== 'admin' && role !== 'staff' && role !== 'customer') {
+                role = 'customer';
+            }
+            $('#edit-role').val(role);
+
+            $('#edit-password').val('');
+            $('#edit-password-confirmation').val('');
+            $('#edit-user-error').addClass('hidden').text('');
+
+            $('#edit-user-modal').removeClass('hidden');
+        }
+
+        function closeEditUserModal() {
+            $('#edit-user-modal').addClass('hidden');
+            $('#edit-user-form')[0].reset();
+            $('#edit-user-error').addClass('hidden').text('');
+        }
+
+        $('#edit-user-form').on('submit', function (e) {
+            e.preventDefault();
+            $('#edit-user-error').addClass('hidden').text('');
+
+            var id = $('#edit-user-id').val();
+            if (!id) {
+                $('#edit-user-error').removeClass('hidden').text('Missing user id.');
+                return;
+            }
+
+            var data = {
+                username: $('#edit-username').val(),
+                name: $('#edit-name').val(),
+                middle_name: $('#edit-middle-name').val() || null,
+                last_name: $('#edit-last-name').val(),
+                email: $('#edit-email').val(),
+                role: $('#edit-role').val()
+            };
+
+            var password = $('#edit-password').val();
+            var passwordConfirmation = $('#edit-password-confirmation').val();
+
+            if (password || passwordConfirmation) {
+                if (password !== passwordConfirmation) {
+                    $('#edit-user-error').removeClass('hidden').text('Passwords do not match.');
+                    return;
+                }
+                data.password = password;
+                data.password_confirmation = passwordConfirmation;
+            }
+
+            var $submitBtn = $('#edit-user-form').find('button[type=\"submit\"]');
+            $submitBtn.prop('disabled', true).text('Saving...');
+
+            Api.request({
+                url: Api.getBaseUrl() + '/admin/users/' + encodeURIComponent(id),
+                method: 'PUT',
+                contentType: 'application/json',
+                processData: false,
+                data: JSON.stringify(data),
+                headers: { 'Accept': 'application/json' }
+            }).done(function (res) {
+                if (res && res.success) {
+                    closeEditUserModal();
+                    loadUsers();
+                    alert('User updated successfully!');
+                } else {
+                    $('#edit-user-error').removeClass('hidden').text((res && res.message) ? res.message : 'Failed to update user.');
+                }
+            }).fail(function (xhr) {
+                var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                var errorMsg = 'Failed to update user.';
+                if (json) {
+                    if (json.message) {
+                        errorMsg = json.message;
+                    } else if (json.errors) {
+                        var errorKeys = Object.keys(json.errors);
+                        if (errorKeys.length > 0) {
+                            errorMsg = json.errors[errorKeys[0]][0] || errorMsg;
+                        }
+                    }
+                }
+                $('#edit-user-error').removeClass('hidden').text(errorMsg);
+            }).always(function () {
+                $submitBtn.prop('disabled', false).text('Save Changes');
             });
         });
 
