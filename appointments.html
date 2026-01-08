@@ -437,31 +437,12 @@
                 });
             }
 
-            // Sort by status priority: pending, in_progress, completed, cancelled
-            // All statuses: sort by date descending (latest first)
+            // Sort by appointment date and time only (earliest first)
+            // Prioritize actual scheduled date/time, not booking date
             list.sort(function(a, b) {
-                const statusPriority = {
-                    'pending': 1,
-                    'in_progress': 2,
-                    'completed': 3,
-                    'cancelled': 4
-                };
-                
-                const statusA = String(a && a.status ? a.status : '').toLowerCase();
-                const statusB = String(b && b.status ? b.status : '').toLowerCase();
-                
-                const priorityA = statusPriority[statusA] || 5;
-                const priorityB = statusPriority[statusB] || 5;
-                
-                // First sort by status priority
-                if (priorityA !== priorityB) {
-                    return priorityA - priorityB;
-                }
-                
-                // If same status, sort by appointment_date descending (latest first)
                 const da = a && a.appointment_date ? Date.parse(a.appointment_date) : 0;
                 const db = b && b.appointment_date ? Date.parse(b.appointment_date) : 0;
-                return (db || 0) - (da || 0); // Descending for all statuses
+                return (da || 0) - (db || 0);
             });
 
             renderAppointments(list);
