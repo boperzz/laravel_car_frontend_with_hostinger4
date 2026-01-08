@@ -438,7 +438,7 @@
             }
 
             // Sort by status priority: pending, in_progress, completed, cancelled
-            // Then by appointment_date within each status
+            // All statuses: sort by date descending (latest first)
             list.sort(function(a, b) {
                 const statusPriority = {
                     'pending': 1,
@@ -458,10 +458,10 @@
                     return priorityA - priorityB;
                 }
                 
-                // If same status, sort by appointment_date (ascending)
+                // If same status, sort by appointment_date descending (latest first)
                 const da = a && a.appointment_date ? Date.parse(a.appointment_date) : 0;
                 const db = b && b.appointment_date ? Date.parse(b.appointment_date) : 0;
-                return (da || 0) - (db || 0);
+                return (db || 0) - (da || 0); // Descending for all statuses
             });
 
             renderAppointments(list);
