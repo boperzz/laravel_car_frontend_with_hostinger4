@@ -564,18 +564,37 @@
             appointments.forEach(function(a) {
                 const vehicle = a.vehicle ? `${a.vehicle.make || ''} ${a.vehicle.model || ''} ${a.vehicle.year || ''}`.trim() : '—';
                 const date = (window.DateUtils && DateUtils.formatDate) ? DateUtils.formatDate(a.appointment_date) : (a.appointment_date || '—');
-                // Extract time from appointment_date (format as HH:mm)
+                // Extract time directly from appointment_date string to preserve exact database time
+                // Format should match: "2026-01-23 08:00" -> extract "08:00"
                 let time = '—';
                 if (a.appointment_date) {
                     try {
-                        const dateObj = new Date(a.appointment_date);
-                        if (!isNaN(dateObj.getTime())) {
-                            // Format as HH:mm (24-hour format)
-                            const hours = String(dateObj.getHours()).padStart(2, '0');
-                            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
-                            time = `${hours}:${minutes}`;
+                        const dateStr = String(a.appointment_date);
+                        let timeStr = '';
+                        
+                        // Handle space-separated format (e.g., "2026-01-23 08:00" or "2026-01-23 08:00:00")
+                        if (dateStr.indexOf(' ') !== -1) {
+                            const parts = dateStr.split(' ');
+                            if (parts.length > 1) {
+                                // Extract HH:mm from the time part (remove seconds if present)
+                                timeStr = parts[1].substring(0, 5); // Extract HH:mm
+                            }
+                        }
+                        // Handle ISO format with 'T' separator (e.g., "2026-01-23T08:00" or "2026-01-23T08:00:00Z")
+                        else if (dateStr.indexOf('T') !== -1) {
+                            const timePart = dateStr.split('T')[1];
+                            if (timePart) {
+                                // Remove timezone info (Z, +HH:mm, -HH:mm) and extract HH:mm
+                                timeStr = timePart.replace(/[Z+-].*$/, '').substring(0, 5);
+                            }
+                        }
+                        
+                        // Validate and set time (must be HH:mm format)
+                        if (timeStr && timeStr.length === 5 && /^\d{2}:\d{2}$/.test(timeStr)) {
+                            time = timeStr;
                         }
                     } catch (e) {
+                        console.warn('Error extracting time from appointment_date:', e);
                         time = '—';
                     }
                 }
