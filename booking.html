@@ -31,6 +31,9 @@
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     
+    <!-- API Configuration -->
+    <script src="js/api.js"></script>
+    
     <!-- Alpine.js for navigation dropdown -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
@@ -130,8 +133,8 @@
                                     <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         <i class="fas fa-user-edit mr-2"></i> Profile
                                     </a>
-                                   <a href="#" onclick="Logout.logout()" class="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-white/60">
-                                    <i class="fas fa-sign-out-alt mr-2"></i>Log Out
+                                    <a href="#" onclick="Logout.logout()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-sign-out-alt mr-2"></i> Log Out
                                     </a>
                                 </div>
                             </div>
@@ -396,8 +399,20 @@
 
         // Configuration: API Base URL
         function getApiUrl() {
-            const url = document.getElementById('api-url').value.trim();
-            return url.endsWith('/') ? url.slice(0, -1) : url;
+            // First try to use the centralized Api.getBaseUrl() from api.js
+            if (window.Api && typeof Api.getBaseUrl === 'function') {
+                return Api.getBaseUrl();
+            }
+            
+            // Fallback to input field if Api is not available
+            const apiUrlInput = document.getElementById('api-url');
+            if (apiUrlInput && apiUrlInput.value) {
+                const url = apiUrlInput.value.trim();
+                return url.endsWith('/') ? url.slice(0, -1) : url;
+            }
+            
+            // Final fallback to default API URL
+            return 'https://laravel-test-system.orbit-node.com/api';
         }
 
         function getAuthToken() {
@@ -427,26 +442,15 @@
 
                 navActions.find('.nav-logout-link').last().on('click', function (e) {
                     e.preventDefault();
-                    logout();
+                    if (window.Logout && Logout.logout) {
+                        Logout.logout();
+                    }
                 });
             });
         }
 
-        function logout() {
-            $.ajax({
-                url: `${getApiUrl()}/auth/logout`,
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${getAuthToken()}`,
-                },
-                complete: function() {
-                    localStorage.removeItem('authToken');
-                    localStorage.removeItem('currentUser');
-                    window.location.href = 'login.html';
-                }
-            });
-        }
+        // Logout is now handled by Logout.logout() from logout.js
+        // Removed duplicate local logout function for consistency
 
         // Initialize on page load
         $(document).ready(function() {
@@ -729,12 +733,17 @@
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error('Error loading slots:', error);
+                    console.error('Error loading slots:', error, 'Status:', status, 'XHR:', xhr);
                     let errorMsg = 'Failed to load available time slots.';
                     
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                    // Handle CORS errors
+                    if (xhr.status === 0 || status === 'error') {
+                        errorMsg = 'Unable to connect to the server. Please check your API URL configuration.';
+                        console.error('CORS or network error detected. API URL:', apiUrl);
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
                     }
+                    
                     $('#time-slots-container').html(`<p class="text-sm text-red-600">${errorMsg}</p>`);
                 }
             });
@@ -968,10 +977,14 @@
                         resetFullCapacityState();
                     }
                 },
-                error: function(xhr) {
+                error: function(xhr, status, error) {
                     // If 409 error, it's full capacity
                     if (xhr.status === 409) {
                         handleFullCapacity();
+                    } else if (xhr.status === 0 || status === 'error') {
+                        // CORS error or network error - don't block booking, just log it
+                        console.warn('API request failed (CORS or network error):', error, 'API URL:', apiUrl);
+                        resetFullCapacityState();
                     } else {
                         // Other errors, don't block booking
                         resetFullCapacityState();
@@ -1204,4 +1217,3 @@
     </script>
 </body>
 </html>
-
