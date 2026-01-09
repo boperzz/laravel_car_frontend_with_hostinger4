@@ -192,6 +192,19 @@
                 <div class="py-6">
                     <div class="max-w-4xl mx-auto">
                         <div class="bg-white rounded-lg shadow p-6">
+                            <!-- Full Capacity Warning Banner -->
+                            <div id="full-capacity-warning" class="hidden mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <div class="flex items-start">
+                                    <i class="fas fa-exclamation-triangle text-yellow-600 text-xl mr-3 mt-1"></i>
+                                    <div>
+                                        <h3 class="font-semibold text-yellow-800 mb-1">Booking Temporarily Unavailable</h3>
+                                        <p class="text-sm text-yellow-700">
+                                            All staff are currently assigned to appointments. The appointment will remain unassigned until staff availability opens up. Please try again later.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <form id="appointment-form">
                                 
                                 <!-- Customer Information Section -->
@@ -483,6 +496,9 @@
             });
 
             $('#appointment-form').on('submit', handleFormSubmit);
+            
+            // Check booking availability on page load
+            checkBookingAvailability();
         }
 
         function loadMyVehicles() {
@@ -679,17 +695,37 @@
                 }),
                 success: function(response) {
                     if (response.success && response.data) {
+                        // Check if system is at full capacity
+                        if (response.data.full_capacity === true) {
+                            handleFullCapacity();
+                            return;
+                        }
+                        
                         availableSlots = response.data.slots || [];
                         // Then load existing appointments to check for booked slots
                         loadBookedAppointments();
                     } else {
+                        // Check if it's a full capacity error
+                        if (response.message && response.message.includes('fully assigned')) {
+                            handleFullCapacity();
+                            return;
+                        }
                         $('#time-slots-container').html('<p class="text-sm text-red-600">No available slots for this date.</p>');
                     }
                 },
                 error: function(xhr, status, error) {
                     console.error('Error loading slots:', error);
                     let errorMsg = 'Failed to load available time slots.';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                    
+                    // Check if it's a full capacity error
+                    if (xhr.status === 409) {
+                        const response = xhr.responseJSON || {};
+                        if (response.message && response.message.includes('fully assigned')) {
+                            handleFullCapacity();
+                            return;
+                        }
+                        errorMsg = response.message || 'Booking temporarily unavailable. All staff are fully assigned.';
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
                     }
                     $('#time-slots-container').html(`<p class="text-sm text-red-600">${errorMsg}</p>`);
@@ -880,9 +916,77 @@
             $('#estimated-duration').text(`Duration: ${totalDuration} minutes`);
         }
 
+        // Handle full capacity state
+        function handleFullCapacity() {
+            $('#full-capacity-warning').removeClass('hidden');
+            $('#appointment-form input, #appointment-form select, #appointment-form textarea, #appointment-form button[type="submit"]').prop('disabled', true);
+            $('#time-slots-container').html('<p class="text-sm text-yellow-700">Booking is temporarily unavailable. All staff are currently assigned to appointments.</p>');
+        }
+
+        // Reset full capacity state
+        function resetFullCapacityState() {
+            $('#full-capacity-warning').addClass('hidden');
+            $('#appointment-form input, #appointment-form select, #appointment-form textarea, #appointment-form button[type="submit"]').prop('disabled', false);
+        }
+
+        // Check booking availability on page load
+        function checkBookingAvailability() {
+            // Wait for services to load first
+            if (!services || services.length === 0) {
+                // Services not loaded yet, check after a short delay
+                setTimeout(checkBookingAvailability, 500);
+                return;
+            }
+
+            const apiUrl = getApiUrl();
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Use the first available service to check capacity
+            const serviceIds = services.length > 0 ? [services[0].id] : [];
+            
+            if (serviceIds.length === 0) {
+                // No services available, don't block booking
+                resetFullCapacityState();
+                return;
+            }
+            
+            // Try to get available slots for today to check capacity
+            $.ajax({
+                url: `${apiUrl}/public/available-slots`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    date: today,
+                    service_ids: serviceIds
+                }),
+                success: function(response) {
+                    if (response.success && response.data && response.data.full_capacity === true) {
+                        handleFullCapacity();
+                    } else {
+                        resetFullCapacityState();
+                    }
+                },
+                error: function(xhr) {
+                    // If 409 error, it's full capacity
+                    if (xhr.status === 409) {
+                        handleFullCapacity();
+                    } else {
+                        // Other errors, don't block booking
+                        resetFullCapacityState();
+                    }
+                }
+            });
+        }
+
         // Handle form submit
         function handleFormSubmit(e) {
             e.preventDefault();
+
+            // Check if booking is disabled
+            if ($('#full-capacity-warning').is(':visible')) {
+                showAlert('error', 'Booking is temporarily unavailable. All staff are currently assigned to appointments. Please try again later.');
+                return;
+            }
 
             const token = getAuthToken();
             if (!token) {
@@ -954,7 +1058,13 @@
                 },
                 error: function(xhr, status, error) {
                     let errorMsg = 'Failed to book appointment. Please try again.';
-                    if (xhr.responseJSON) {
+                    
+                    // Check if it's a full capacity error
+                    if (xhr.status === 409) {
+                        const response = xhr.responseJSON || {};
+                        errorMsg = response.message || 'Booking temporarily disabled. All staff are fully assigned.';
+                        handleFullCapacity();
+                    } else if (xhr.responseJSON) {
                         if (xhr.responseJSON.message) {
                             errorMsg = xhr.responseJSON.message;
                         }
