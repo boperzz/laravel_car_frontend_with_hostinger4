@@ -525,6 +525,53 @@
             }, 10000); // 10 seconds
         }
 
+        // Refresh user information from API
+        function refreshUserInfo() {
+            const token = getAuthToken();
+            if (!token) {
+                return;
+            }
+
+            const apiUrl = getApiUrl();
+
+            $.ajax({
+                url: `${apiUrl}/me`,
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                success: function(res) {
+                    const user = res && res.data && res.data.user;
+                    if (user) {
+                        // Update localStorage with fresh user data
+                        localStorage.setItem('currentUser', JSON.stringify(user));
+                        
+                        // Update customer name and email fields
+                        const fullName = ((user.name || '') + ' ' + (user.last_name || '')).trim() || (user.name || '');
+                        $('#customer_name').val(fullName);
+                        $('#customer_email').val(user.email || '');
+                        
+                        // Ensure fields remain disabled for logged-in users
+                        $('#customer_name').prop('disabled', true);
+                        $('#customer_email').prop('disabled', true);
+                        
+                        // Update username in dropdown
+                        if ($('#user-name').length) {
+                            $('#user-name').text(user.username || user.name || 'User');
+                        }
+                    }
+                },
+                error: function(xhr) {
+                    if (xhr && xhr.status === 401) {
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('currentUser');
+                    }
+                    // Silently fail - don't show error for user info refresh
+                }
+            });
+        }
+
         function loadMyVehicles() {
             const token = getAuthToken();
             if (!token) {
@@ -1132,6 +1179,8 @@
                         
                         // Reload data after successful booking
                         setTimeout(function() {
+                            // Refresh user information (username and email)
+                            refreshUserInfo();
                             // Reload services to get updated information
                             loadServices();
                             // Reload vehicles to get updated list
