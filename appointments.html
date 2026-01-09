@@ -357,6 +357,14 @@
             setupNavAuth();
 
             loadAppointments();
+            
+            // Auto-refresh appointments every 30 seconds
+            setInterval(function() {
+                // Only refresh if not currently in edit mode
+                if (!editAppointment) {
+                    loadAppointments();
+                }
+            }, 30000); // 30 seconds
         });
 
         let allAppointments = [];
@@ -590,8 +598,12 @@
                         }
                         
                         // Validate and set time (must be HH:mm format)
+                        // Remove leading zero from hour to match table display (8:00 instead of 08:00)
                         if (timeStr && timeStr.length === 5 && /^\d{2}:\d{2}$/.test(timeStr)) {
-                            time = timeStr;
+                            const parts = timeStr.split(':');
+                            const hour = parseInt(parts[0], 10);
+                            const minute = parts[1];
+                            time = `${hour}:${minute}`; // Remove leading zero from hour
                         }
                     } catch (e) {
                         console.warn('Error extracting time from appointment_date:', e);
@@ -671,15 +683,62 @@
             const vehicle = a.vehicle ? `${a.vehicle.make || ''} ${a.vehicle.model || ''} ${a.vehicle.year || ''}`.trim() : '—';
             const services = formatServices(a.services);
             const staff = a.staff ? (a.staff.name || a.staff.username || '—') : '—';
-            const date = (window.DateUtils && DateUtils.formatDateTimeShort)
-                ? DateUtils.formatDateTimeShort(a.appointment_date)
-                : (a.appointment_date || '—');
+            
+            // Format date and time to match exactly how the table displays them
+            // Table shows: Date column = MM/DD/YYYY, Time column = HH:mm
+            let date = '—';
+            let time = '—';
+            
+            if (a.appointment_date) {
+                try {
+                    // Format date using the same method as the table (MM/DD/YYYY)
+                    date = (window.DateUtils && DateUtils.formatDate)
+                        ? DateUtils.formatDate(a.appointment_date)
+                        : (a.appointment_date || '—');
+                    
+                    // Extract time using the same method as the table (HH:mm)
+                    const dateStr = String(a.appointment_date);
+                    let timeStr = '';
+                    
+                    // Handle space-separated format (e.g., "2026-01-30 16:00:00")
+                    if (dateStr.indexOf(' ') !== -1) {
+                        const parts = dateStr.split(' ');
+                        if (parts.length > 1) {
+                            // Extract HH:mm from the time part (remove seconds if present)
+                            timeStr = parts[1].substring(0, 5); // Extract HH:mm
+                        }
+                    }
+                    // Handle ISO format with 'T' separator (e.g., "2026-01-30T16:00:00Z")
+                    else if (dateStr.indexOf('T') !== -1) {
+                        const timePart = dateStr.split('T')[1];
+                        if (timePart) {
+                            // Remove timezone info (Z, +HH:mm, -HH:mm) and extract HH:mm
+                            timeStr = timePart.replace(/[Z+-].*$/, '').substring(0, 5);
+                        }
+                    }
+                    
+                    // Validate and set time (must be HH:mm format)
+                    // Remove leading zero from hour to match table display (8:00 instead of 08:00)
+                    if (timeStr && timeStr.length === 5 && /^\d{2}:\d{2}$/.test(timeStr)) {
+                        const parts = timeStr.split(':');
+                        const hour = parseInt(parts[0], 10);
+                        const minute = parts[1];
+                        time = `${hour}:${minute}`; // Remove leading zero from hour
+                    }
+                } catch (e) {
+                    console.warn('Error extracting date/time for dialog:', e);
+                    date = a.appointment_date || '—';
+                    time = '—';
+                }
+            }
+            
             const status = a.status || '—';
             const total = (a.total_price !== null && a.total_price !== undefined) ? `$${parseFloat(a.total_price).toFixed(2)}` : '—';
 
+            // Format to match table: Date: MM/DD/YYYY, Time: HH:mm
             alert(
                 `Appointment Details\n\n` +
-                `Date: ${date}\n` +
+                `Date: ${date} ${time}\n` +
                 `Vehicle: ${vehicle}\n` +
                 `Services: ${services}\n` +
                 `Staff: ${staff}\n` +
