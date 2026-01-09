@@ -99,11 +99,18 @@
                 <div id="assign-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700"></div>
                 <div id="assign-success" class="hidden mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800"></div>
 
+                <div id="no-staff-warning" class="hidden mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800">
+                    <p class="text-sm">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        No staff are available for this appointment's date and time. The appointment will remain unassigned until staff availability opens up.
+                    </p>
+                </div>
+
                 <form id="assign-form" class="flex flex-col sm:flex-row sm:items-center gap-3">
                     <select name="staff_id" id="staff_id" class="border rounded px-3 py-2">
                         <option value="">Select Staff</option>
                     </select>
-                    <button type="submit" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
+                    <button type="submit" id="assign-staff-submit-btn" class="border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-4 py-2 rounded-lg transition font-semibold">
                         <i class="fas fa-user-tie mr-2"></i>Assign Staff
                     </button>
                 </form>
@@ -241,32 +248,135 @@
                 $('#page-loading').addClass('hidden');
                 $('#page-content').removeClass('hidden');
 
-                loadStaffList(a.staff ? a.staff.id : null);
+                // Check staff availability (this will also load staff list)
+                checkStaffAvailability(a);
             }).fail(function (xhr) {
                 var json = xhr && xhr.responseJSON ? xhr.responseJSON : null;
                 showError((json && json.message) ? json.message : 'Failed to load appointment.');
             });
         }
 
-        function loadStaffList(selectedId) {
-            Api.request({
-                url: Api.getBaseUrl() + '/admin/staff',
-                method: 'GET'
-            }).done(function (res) {
-                var staff = res && res.data && res.data.staff ? res.data.staff : [];
+        function loadStaffList(selectedId, availableStaff) {
+            // If availableStaff is provided, only show available staff
+            // Otherwise, show all staff (fallback)
+            var staffToShow = availableStaff && availableStaff.length > 0 ? availableStaff : null;
+
+            if (staffToShow) {
+                // Use available staff
                 var options = '<option value="">Select Staff</option>';
-                staff.forEach(function (s) {
-                    var name = [s.name, s.last_name].filter(Boolean).join(' ') || s.username || s.email;
+                staffToShow.forEach(function (s) {
+                    var name = s.name || s.username || s.email || ('Staff #' + s.id);
                     var sel = (selectedId && String(selectedId) === String(s.id)) ? ' selected' : '';
                     options += '<option value="' + escapeHtml(s.id) + '"' + sel + '>' + escapeHtml(name) + '</option>';
                 });
                 $('#staff_id').html(options);
+            } else {
+                // Fallback: load all staff
+                Api.request({
+                    url: Api.getBaseUrl() + '/admin/staff',
+                    method: 'GET'
+                }).done(function (res) {
+                    var staff = res && res.data && res.data.staff ? res.data.staff : [];
+                    var options = '<option value="">Select Staff</option>';
+                    staff.forEach(function (s) {
+                        var name = [s.name, s.last_name].filter(Boolean).join(' ') || s.username || s.email;
+                        var sel = (selectedId && String(selectedId) === String(s.id)) ? ' selected' : '';
+                        options += '<option value="' + escapeHtml(s.id) + '"' + sel + '>' + escapeHtml(name) + '</option>';
+                    });
+                    $('#staff_id').html(options);
+                });
+            }
+        }
+
+        function checkStaffAvailability(appointment) {
+            if (!appointment || !appointment.appointment_date) {
+                // If no appointment date, show all staff (fallback)
+                $('#no-staff-warning').addClass('hidden');
+                $('#staff_id').prop('disabled', false);
+                $('#assign-staff-submit-btn').prop('disabled', false).attr('title', '');
+                return;
+            }
+
+            // Parse appointment date and time
+            var appointmentDate = new Date(appointment.appointment_date);
+            if (isNaN(appointmentDate.getTime())) {
+                $('#no-staff-warning').addClass('hidden');
+                $('#staff_id').prop('disabled', false);
+                $('#assign-staff-submit-btn').prop('disabled', false).attr('title', '');
+                return;
+            }
+
+            // Format date and time for API
+            var year = appointmentDate.getFullYear();
+            var month = String(appointmentDate.getMonth() + 1).padStart(2, '0');
+            var day = String(appointmentDate.getDate()).padStart(2, '0');
+            var dateStr = year + '-' + month + '-' + day;
+            
+            var hours = String(appointmentDate.getHours()).padStart(2, '0');
+            var minutes = String(appointmentDate.getMinutes()).padStart(2, '0');
+            var timeStr = hours + ':' + minutes;
+
+            // Calculate duration from services
+            var durationMinutes = 60; // Default
+            if (appointment.services && appointment.services.length > 0) {
+                durationMinutes = appointment.services.reduce(function (sum, s) {
+                    return sum + (parseInt(s.duration_minutes) || 0);
+                }, 0);
+            }
+
+            // Build API URL
+            var params = ['date=' + encodeURIComponent(dateStr), 'time=' + encodeURIComponent(timeStr)];
+            if (durationMinutes > 0) {
+                params.push('duration_minutes=' + durationMinutes);
+            }
+            if (appointment.id) {
+                params.push('appointment_id=' + appointment.id);
+            }
+
+            var apiUrl = Api.getBaseUrl() + '/admin/staff/available?' + params.join('&');
+
+            // Fetch available staff
+            Api.request({
+                url: apiUrl,
+                method: 'GET'
+            }).done(function (res) {
+                var availableStaff = (res && res.data && res.data.staff) ? res.data.staff : [];
+                var $noStaffWarning = $('#no-staff-warning');
+                var $staffSelect = $('#staff_id');
+                var $assignBtn = $('#assign-staff-submit-btn');
+
+                if (availableStaff.length === 0) {
+                    // No staff available - show warning and disable assignment
+                    $noStaffWarning.removeClass('hidden');
+                    $staffSelect.prop('disabled', true).empty().append('<option value="">No available staff</option>');
+                    $assignBtn.prop('disabled', true).attr('title', 'No available staff');
+                } else {
+                    // Staff available - hide warning and enable assignment
+                    $noStaffWarning.addClass('hidden');
+                    loadStaffList(appointment.staff ? appointment.staff.id : null, availableStaff);
+                    $staffSelect.prop('disabled', false);
+                    $assignBtn.prop('disabled', false).attr('title', '');
+                }
+            }).fail(function (xhr) {
+                // On error, fallback to showing all staff
+                console.warn('Failed to check staff availability:', xhr);
+                $('#no-staff-warning').addClass('hidden');
+                $('#staff_id').prop('disabled', false);
+                $('#assign-staff-submit-btn').prop('disabled', false).attr('title', '');
             });
         }
 
         function assignStaff() {
             $('#assign-error').addClass('hidden').text('');
             $('#assign-success').addClass('hidden').text('');
+
+            // Check if staff assignment is disabled (no available staff)
+            var $staffSelect = $('#staff_id');
+            var $assignBtn = $('#assign-staff-submit-btn');
+            if ($staffSelect.prop('disabled') || $assignBtn.prop('disabled')) {
+                $('#assign-error').removeClass('hidden').text('No staff are available for this appointment\'s date and time.');
+                return;
+            }
 
             var staffId = $('#staff_id').val();
             if (!staffId) {
