@@ -208,6 +208,11 @@
             });
 
             loadAppointments();
+            
+            // Auto-refresh appointments every 30 seconds
+            setInterval(function() {
+                loadAppointments();
+            }, 30000); // 30 seconds
         });
 
         function hydrateFiltersFromQuery() {

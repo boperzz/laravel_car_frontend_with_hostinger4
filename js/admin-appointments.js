@@ -802,7 +802,7 @@
     }
 
     function init() {
-        if (!RoleGuard.requireRole(['admin'])) {
+        if (!RoleGuard.requireRole(['admin', 'super_admin'])) {
             return;
         }
 
@@ -824,6 +824,14 @@
         fetchStaff().always(function () {
             setLoading(false);
             loadAppointments();
+            
+            // Auto-refresh appointments every 30 seconds
+            setInterval(function() {
+                // Only refresh if not currently loading and no modal is open
+                if (!state.loading && !state.selectedAppointment) {
+                    loadAppointments();
+                }
+            }, 30000); // 30 seconds
         });
     }
 
