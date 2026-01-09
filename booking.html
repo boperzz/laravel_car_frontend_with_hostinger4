@@ -485,6 +485,12 @@
             $('#appointment_date').on('change', function() {
                 selectedDate = $(this).val();
                 selectedTimeSlot = null;
+                
+                // Immediately check capacity when date is selected
+                if (selectedDate) {
+                    checkCapacityForDate(selectedDate);
+                }
+                
                 if (selectedDate && selectedServices.length > 0) {
                     loadAvailableSlots();
                 }
@@ -499,6 +505,14 @@
             
             // Check booking availability on page load
             checkBookingAvailability();
+            
+            // Check booking availability every 10 seconds
+            setInterval(function() {
+                // Only check if currently at full capacity (to avoid unnecessary API calls)
+                if ($('#full-capacity-warning').is(':visible')) {
+                    checkBookingAvailability();
+                }
+            }, 10000); // 10 seconds
         }
 
         function loadMyVehicles() {
@@ -650,6 +664,12 @@
                     toggleService(service.id, $(this).is(':checked'));
                     card.toggleClass('selected', $(this).is(':checked'));
                     updateSummary();
+                    
+                    // Immediately check capacity when services change
+                    if (selectedDate) {
+                        checkCapacityForDate(selectedDate);
+                    }
+                    
                     if (selectedDate) {
                         loadAvailableSlots();
                     }
@@ -927,6 +947,50 @@
         function resetFullCapacityState() {
             $('#full-capacity-warning').addClass('hidden');
             $('#appointment-form input, #appointment-form select, #appointment-form textarea, #appointment-form button[type="submit"]').prop('disabled', false);
+        }
+
+        // Check capacity for a specific date
+        function checkCapacityForDate(date) {
+            if (!services || services.length === 0) {
+                return;
+            }
+
+            const apiUrl = getApiUrl();
+            const serviceIds = selectedServices.length > 0 
+                ? selectedServices.map(s => s.id) 
+                : (services.length > 0 ? [services[0].id] : []);
+            
+            if (serviceIds.length === 0) {
+                resetFullCapacityState();
+                return;
+            }
+            
+            // Immediately check capacity for the selected date
+            $.ajax({
+                url: `${apiUrl}/public/available-slots`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    date: date,
+                    service_ids: serviceIds
+                }),
+                success: function(response) {
+                    if (response.success && response.data && response.data.full_capacity === true) {
+                        handleFullCapacity();
+                    } else {
+                        resetFullCapacityState();
+                    }
+                },
+                error: function(xhr) {
+                    // If 409 error, it's full capacity
+                    if (xhr.status === 409) {
+                        handleFullCapacity();
+                    } else {
+                        // Other errors, don't block booking
+                        resetFullCapacityState();
+                    }
+                }
+            });
         }
 
         // Check booking availability on page load
