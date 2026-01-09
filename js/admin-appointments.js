@@ -564,6 +564,8 @@
                 showAlert('success', 'Staff assigned successfully.');
                 applySearchFilterAndRender();
                 renderAppointmentDetails(updated);
+                // Refresh appointments to get latest data
+                loadAppointments();
                 return;
             }
 
@@ -757,6 +759,8 @@
                 showAlert('success', res.message || 'Appointment cancelled successfully.');
                 applySearchFilterAndRender();
                 renderAppointmentDetails(updated);
+                // Refresh appointments to get latest data
+                loadAppointments();
                 return;
             }
 
@@ -825,13 +829,16 @@
             setLoading(false);
             loadAppointments();
             
-            // Auto-refresh appointments every 30 seconds
+            // Auto-refresh appointments every 10 seconds for real-time updates
             setInterval(function() {
-                // Only refresh if not currently loading and no modal is open
-                if (!state.loading && !state.selectedAppointment) {
+                // Only refresh if not currently loading and appointment details panel is not visible
+                var $detailsPanel = global.jQuery('#admin-appointment-details');
+                var isDetailsVisible = $detailsPanel.length > 0 && !$detailsPanel.hasClass('hidden');
+                
+                if (!state.loading && !isDetailsVisible) {
                     loadAppointments();
                 }
-            }, 30000); // 30 seconds
+            }, 10000); // 10 seconds for more real-time feel
         });
     }
 
