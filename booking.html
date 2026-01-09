@@ -715,21 +715,11 @@
                 }),
                 success: function(response) {
                     if (response.success && response.data) {
-                        // Check if system is at full capacity
-                        if (response.data.full_capacity === true) {
-                            handleFullCapacity();
-                            return;
-                        }
-                        
+                        // Load available slots - full capacity check happens during booking submission, not here
                         availableSlots = response.data.slots || [];
                         // Then load existing appointments to check for booked slots
                         loadBookedAppointments();
                     } else {
-                        // Check if it's a full capacity error
-                        if (response.message && response.message.includes('fully assigned')) {
-                            handleFullCapacity();
-                            return;
-                        }
                         $('#time-slots-container').html('<p class="text-sm text-red-600">No available slots for this date.</p>');
                     }
                 },
@@ -737,15 +727,7 @@
                     console.error('Error loading slots:', error);
                     let errorMsg = 'Failed to load available time slots.';
                     
-                    // Check if it's a full capacity error
-                    if (xhr.status === 409) {
-                        const response = xhr.responseJSON || {};
-                        if (response.message && response.message.includes('fully assigned')) {
-                            handleFullCapacity();
-                            return;
-                        }
-                        errorMsg = response.message || 'Booking temporarily unavailable. All staff are fully assigned.';
-                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
                     }
                     $('#time-slots-container').html(`<p class="text-sm text-red-600">${errorMsg}</p>`);
