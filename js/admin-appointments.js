@@ -180,8 +180,44 @@
                 return !!x;
             }).join(', ');
 
+            // Extract date and time from appointment_date
+            var date = formatDate(a.appointment_date);
+            var time = '—';
+            if (a.appointment_date) {
+                try {
+                    var dateStr = String(a.appointment_date);
+                    var timeStr = '';
+                    
+                    // Handle space-separated format (e.g., "2026-01-23 08:00" or "2026-01-23 08:00:00")
+                    if (dateStr.indexOf(' ') !== -1) {
+                        var parts = dateStr.split(' ');
+                        if (parts.length > 1) {
+                            // Extract HH:mm from the time part (remove seconds if present)
+                            timeStr = parts[1].substring(0, 5); // Extract HH:mm
+                        }
+                    }
+                    // Handle ISO format with 'T' separator (e.g., "2026-01-23T08:00" or "2026-01-23T08:00:00Z")
+                    else if (dateStr.indexOf('T') !== -1) {
+                        var timePart = dateStr.split('T')[1];
+                        if (timePart) {
+                            // Remove timezone info (Z, +HH:mm, -HH:mm) and extract HH:mm
+                            timeStr = timePart.replace(/[Z+-].*$/, '').substring(0, 5);
+                        }
+                    }
+                    
+                    // Validate and set time (must be HH:mm format)
+                    if (timeStr && timeStr.length === 5 && /^\d{2}:\d{2}$/.test(timeStr)) {
+                        time = timeStr;
+                    }
+                } catch (e) {
+                    console.warn('Error extracting time from appointment_date:', e);
+                    time = '—';
+                }
+            }
+
             var row = '<tr data-action="view" data-id="' + escapeHtml(a.id) + '">'
-                + '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(formatDate(a.appointment_date)) + '</td>'
+                + '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(date) + '</td>'
+                + '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(time) + '</td>'
                 + '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(customer) + '</td>'
                 + '<td class="px-6 py-4 whitespace-nowrap text-sm">' + escapeHtml(vehicle) + '</td>'
                 + '<td class="px-6 py-4 text-sm">' + escapeHtml(servicesText || '-') + '</td>'
