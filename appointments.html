@@ -850,6 +850,22 @@
                 return;
             }
 
+            // Check if staff is assigned - if so, deny editing date and time
+            const hasStaffAssigned = (a.staff && (a.staff.id || a.staff.name || a.staff.username)) || 
+                                    (a.staff_id !== null && a.staff_id !== undefined);
+            
+            if (hasStaffAssigned) {
+                const staffName = a.staff ? (a.staff.name || a.staff.username || 'a staff member') : 'a staff member';
+                showAlert('error', `Cannot edit appointment date and time. This appointment is already assigned to ${staffName}. Please contact support if you need to make changes.`);
+                // Scroll to alert container
+                setTimeout(function() {
+                    $('html, body').animate({
+                        scrollTop: $('#alert-container').offset().top - 20
+                    }, 500);
+                }, 100);
+                return; // Prevent modal from opening
+            }
+
             editAppointment = a;
             editSelectedServiceIds = (a.services || []).map(function(s) { return s && s.id; }).filter(Boolean);
 
@@ -1324,6 +1340,25 @@
         }
 
         function submitEditAppointment() {
+            // Check if staff is assigned - prevent editing if staff is assigned
+            if (editAppointment) {
+                const hasStaffAssigned = (editAppointment.staff && (editAppointment.staff.id || editAppointment.staff.name || editAppointment.staff.username)) || 
+                                        (editAppointment.staff_id !== null && editAppointment.staff_id !== undefined);
+                
+                if (hasStaffAssigned) {
+                    const staffName = editAppointment.staff ? (editAppointment.staff.name || editAppointment.staff.username || 'a staff member') : 'a staff member';
+                    hideEditModal();
+                    showAlert('error', `Cannot edit appointment date and time. This appointment is already assigned to ${staffName}. Please contact support if you need to make changes.`);
+                    // Scroll to alert container
+                    setTimeout(function() {
+                        $('html, body').animate({
+                            scrollTop: $('#alert-container').offset().top - 20
+                        }, 500);
+                    }, 100);
+                    return;
+                }
+            }
+
             if (!validateEditForm()) {
                 return;
             }
