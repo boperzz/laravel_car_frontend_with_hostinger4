@@ -33,6 +33,7 @@
     
     <!-- API Configuration -->
     <script src="js/api.js"></script>
+    <script src="js/logout.js"></script>
     
     <!-- Alpine.js for navigation dropdown -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -708,6 +709,13 @@
             const apiUrl = getApiUrl();
             const serviceIds = selectedServices.map(s => s.id);
 
+            // Validate API URL before making request
+            if (!apiUrl || apiUrl.includes('boperzz.github.io') || apiUrl === window.location.origin) {
+                $('#time-slots-container').html('<p class="text-sm text-red-600">Invalid API URL configuration. Please check your API URL settings.</p>');
+                console.error('Invalid API URL detected:', apiUrl);
+                return;
+            }
+
             $('#time-slots-container').html('<div class="text-center py-2 text-blue-600"><i class="fas fa-spinner fa-spin mr-2"></i>Loading available slots...</div>');
 
             // Reset booked slots
@@ -718,6 +726,7 @@
                 url: `${apiUrl}/public/available-slots`,
                 method: 'POST',
                 contentType: 'application/json',
+                timeout: 10000, // 10 second timeout
                 data: JSON.stringify({
                     date: selectedDate,
                     service_ids: serviceIds
@@ -1019,6 +1028,7 @@
                 url: `${apiUrl}/public/available-slots`,
                 method: 'POST',
                 contentType: 'application/json',
+                timeout: 10000, // 10 second timeout
                 data: JSON.stringify({
                     date: today,
                     service_ids: serviceIds
@@ -1030,10 +1040,14 @@
                         resetFullCapacityState();
                     }
                 },
-                error: function(xhr) {
+                error: function(xhr, status, error) {
                     // If 409 error, it's full capacity
                     if (xhr.status === 409) {
                         handleFullCapacity();
+                    } else if (xhr.status === 0 || status === 'error' || status === 'timeout') {
+                        // CORS error, network error, or timeout - don't block booking, just log it
+                        console.warn('API request failed (CORS, network, or timeout error):', error, 'Status:', status, 'API URL:', apiUrl);
+                        resetFullCapacityState();
                     } else {
                         // Other errors, don't block booking
                         resetFullCapacityState();
