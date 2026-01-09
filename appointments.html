@@ -850,23 +850,14 @@
                 return;
             }
 
-            // Check if staff is assigned - if so, deny editing date and time
+            editAppointment = a;
+            
+            // Check if staff is assigned - if so, disable date and time editing
             const hasStaffAssigned = (a.staff && (a.staff.id || a.staff.name || a.staff.username)) || 
                                     (a.staff_id !== null && a.staff_id !== undefined);
             
-            if (hasStaffAssigned) {
-                const staffName = a.staff ? (a.staff.name || a.staff.username || 'a staff member') : 'a staff member';
-                showAlert('error', `Cannot edit appointment date and time. This appointment is already assigned to ${staffName}. Please contact support if you need to make changes.`);
-                // Scroll to alert container
-                setTimeout(function() {
-                    $('html, body').animate({
-                        scrollTop: $('#alert-container').offset().top - 20
-                    }, 500);
-                }, 100);
-                return; // Prevent modal from opening
-            }
-
-            editAppointment = a;
+            // Store this flag for later use
+            editAppointment.hasStaffAssigned = hasStaffAssigned;
             editSelectedServiceIds = (a.services || []).map(function(s) { return s && s.id; }).filter(Boolean);
 
             $('#edit-notes').val(a.notes || '');
@@ -898,6 +889,37 @@
                 renderEditServices();
                 updateEditSummary();
                 setupEditTimeSlotSystem();
+                
+                // If staff is assigned, disable date and time fields
+                if (hasStaffAssigned) {
+                    const staffName = a.staff ? (a.staff.name || a.staff.username || 'a staff member') : 'a staff member';
+                    
+                    // Disable date input
+                    $('#edit-appointment-date').prop('disabled', true).addClass('bg-gray-100 cursor-not-allowed');
+                    
+                    // Disable time slot selection
+                    $('#edit-time-slots-container').html(`
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <p class="text-sm text-yellow-800">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Date and time cannot be changed. This appointment is assigned to <strong>${staffName}</strong>. Only services can be edited.
+                            </p>
+                        </div>
+                    `);
+                    
+                    // Show info message in the form
+                    if ($('#edit-staff-assigned-warning').length === 0) {
+                        $('#edit-appointment-form').prepend(`
+                            <div id="edit-staff-assigned-warning" class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p class="text-sm text-blue-800">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    <strong>Note:</strong> This appointment is assigned to <strong>${staffName}</strong>. You can only edit services and notes. Date and time cannot be changed.
+                                </p>
+                            </div>
+                        `);
+                    }
+                }
+                
                 showEditModal();
             });
         }
@@ -907,6 +929,11 @@
             // Remove any existing event listeners
             $('#edit-appointment-date').off('change.edit-time-slots');
             $('#edit-services-container input[type="checkbox"]').off('change.edit-time-slots');
+            
+            // Skip date/time handlers if staff is assigned
+            if (editAppointment && editAppointment.hasStaffAssigned) {
+                return; // Don't set up date/time change handlers when staff is assigned
+            }
             
             // Add change event listener for date
             $('#edit-appointment-date').on('change.edit-time-slots', function() {
@@ -1194,6 +1221,10 @@
             editAvailableSlots = [];
             editBookedSlots = [];
             $('#edit-time-slots-container').html('<p class="text-sm text-gray-500">Select a date and services first</p>');
+            
+            // Reset form fields
+            $('#edit-appointment-date').prop('disabled', false).removeClass('bg-gray-100 cursor-not-allowed');
+            $('#edit-staff-assigned-warning').remove();
         }
 
         function renderEditServices() {
@@ -1340,34 +1371,35 @@
         }
 
         function submitEditAppointment() {
-            // Check if staff is assigned - prevent editing if staff is assigned
-            if (editAppointment) {
-                const hasStaffAssigned = (editAppointment.staff && (editAppointment.staff.id || editAppointment.staff.name || editAppointment.staff.username)) || 
-                                        (editAppointment.staff_id !== null && editAppointment.staff_id !== undefined);
-                
-                if (hasStaffAssigned) {
-                    const staffName = editAppointment.staff ? (editAppointment.staff.name || editAppointment.staff.username || 'a staff member') : 'a staff member';
-                    hideEditModal();
-                    showAlert('error', `Cannot edit appointment date and time. This appointment is already assigned to ${staffName}. Please contact support if you need to make changes.`);
-                    // Scroll to alert container
-                    setTimeout(function() {
-                        $('html, body').animate({
-                            scrollTop: $('#alert-container').offset().top - 20
-                        }, 500);
-                    }, 100);
+            // Check if staff is assigned - if so, only allow service changes, not date/time
+            if (editAppointment && editAppointment.hasStaffAssigned) {
+                // When staff is assigned, use original date/time and only update services
+                // Skip date/time validation
+                if (editSelectedServiceIds.length === 0) {
+                    showAlert('error', 'Please select at least one service.');
                     return;
                 }
-            }
-
-            if (!validateEditForm()) {
-                return;
+            } else {
+                // Normal validation when staff is not assigned
+                if (!validateEditForm()) {
+                    return;
+                }
             }
 
             const btn = $('#edit-appointment-save');
             btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Saving...');
 
-            // Convert selected time slot to API format
-            const appointmentDateTime = editSelectedTimeSlot.replace('T', ' ');
+            // If staff is assigned, use original appointment date/time
+            let appointmentDateTime;
+            if (editAppointment && editAppointment.hasStaffAssigned) {
+                // Use original appointment date/time when staff is assigned
+                const originalDate = new Date(editAppointment.appointment_date);
+                appointmentDateTime = originalDate.toISOString().replace('T', ' ').substring(0, 19);
+            } else {
+                // Use selected date/time when staff is not assigned
+                appointmentDateTime = editSelectedTimeSlot.replace('T', ' ');
+            }
+            
             const payload = {
                 vehicle_id: (editAppointment.vehicle && editAppointment.vehicle.id) ? editAppointment.vehicle.id : editAppointment.vehicle_id,
                 appointment_date: appointmentDateTime.length === 16 ? appointmentDateTime + ':00' : appointmentDateTime,
