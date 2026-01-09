@@ -1129,6 +1129,16 @@
                         resetForm();
                         // Reset button to normal state after successful booking
                         submitBtn.prop('disabled', false).html('<i class="fas fa-calendar-check mr-2"></i>Book Appointment');
+                        
+                        // Reload data after successful booking
+                        setTimeout(function() {
+                            // Reload services to get updated information
+                            loadServices();
+                            // Reload vehicles to get updated list
+                            loadMyVehicles();
+                            // Check booking availability again
+                            checkBookingAvailability();
+                        }, 500); // Small delay to ensure backend has processed the booking
                     } else {
                         showAlert('error', response.message || 'Failed to book appointment.');
                         submitBtn.prop('disabled', false).html('<i class="fas fa-calendar-check mr-2"></i>Book Appointment');
