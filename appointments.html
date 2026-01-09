@@ -1302,7 +1302,10 @@
 
             // Check if selected time slot is booked
             if (isEditSlotBooked(editSelectedTimeSlot)) {
+                hideEditModal();
                 showAlert('error', 'You already have an appointment scheduled for this date and time. Please select a different time.');
+                // Scroll to alert container
+                $('html, body').animate({ scrollTop: $('#alert-container').offset().top - 100 }, 300);
                 return false;
             }
 
@@ -1385,7 +1388,22 @@
                         }
                     }
                 }
-                showAlert('error', msg);
+                
+                // Check if error is about double booking
+                const isDoubleBookingError = msg.toLowerCase().includes('already have an appointment') || 
+                                            msg.toLowerCase().includes('scheduled for this date and time') ||
+                                            msg.toLowerCase().includes('date and time');
+                
+                if (isDoubleBookingError) {
+                    // Close the edit modal first
+                    hideEditModal();
+                    // Show the error alert (which will auto-scroll)
+                    setTimeout(function() {
+                        showAlert('error', msg);
+                    }, 200); // Small delay to ensure modal is closed
+                } else {
+                    showAlert('error', msg);
+                }
             }).always(function() {
                 btn.prop('disabled', false).html('<i class="fas fa-save mr-2"></i>Save Changes');
             });
@@ -1422,6 +1440,20 @@
             `;
 
             $('#alert-container').stop(true, true).show().html(alertHtml);
+            
+            // Auto-scroll to alert for error messages (if not already visible in viewport)
+            if (type === 'error') {
+                setTimeout(function() {
+                    const alertTop = $('#alert-container').offset().top;
+                    const windowTop = $(window).scrollTop();
+                    const windowHeight = $(window).height();
+                    
+                    // Only scroll if alert is not visible in viewport
+                    if (alertTop < windowTop || alertTop > (windowTop + windowHeight - 100)) {
+                        $('html, body').animate({ scrollTop: alertTop - 100 }, 300);
+                    }
+                }, 100);
+            }
         }
     </script>
 </body>
