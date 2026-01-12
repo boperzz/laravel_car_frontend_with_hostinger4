@@ -445,21 +445,22 @@
                 });
             }
 
-            // Sort by status priority: pending, in_progress, completed, cancelled
+            // Sort by status priority: pending, confirmed, in_progress, completed, cancelled
             // Within each status, sort by appointment_date descending (latest first)
             list.sort(function(a, b) {
                 const statusOrder = {
                     'pending': 1,
-                    'in_progress': 2,
-                    'completed': 3,
-                    'cancelled': 4
+                    'confirmed': 2,
+                    'in_progress': 3,
+                    'completed': 4,
+                    'cancelled': 5
                 };
                 
                 const statusA = (a && a.status ? String(a.status).toLowerCase() : '');
                 const statusB = (b && b.status ? String(b.status).toLowerCase() : '');
                 
-                const orderA = statusOrder[statusA] || 5;
-                const orderB = statusOrder[statusB] || 5;
+                const orderA = statusOrder[statusA] || 6;
+                const orderB = statusOrder[statusB] || 6;
                 
                 // First sort by status priority
                 if (orderA !== orderB) {
@@ -522,7 +523,8 @@
                             <select id="appointments-status-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="all">All</option>
                                 <option value="pending">Pending</option>
-                                <option value="in_progress">In progress</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="in_progress">In Progress</option>
                                 <option value="completed">Completed</option>
                                 <option value="cancelled">Cancelled</option>
                             </select>
