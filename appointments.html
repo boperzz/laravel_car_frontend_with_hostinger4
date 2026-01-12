@@ -894,26 +894,54 @@
                 if (hasStaffAssigned) {
                     const staffName = a.staff ? (a.staff.name || a.staff.username || 'a staff member') : 'a staff member';
                     
-                    // Disable date input
-                    $('#edit-appointment-date').prop('disabled', true).addClass('bg-gray-100 cursor-not-allowed');
+                    // Function to lock date and time fields
+                    function lockDateTimeFields() {
+                        // Disable date input completely
+                        $('#edit-appointment-date')
+                            .prop('disabled', true)
+                            .prop('readonly', true)
+                            .addClass('bg-gray-100 cursor-not-allowed')
+                            .css('pointer-events', 'none')
+                            .off('change.edit-time-slots'); // Remove any change handlers
+                        
+                        // Lock time slot selection
+                        $('#edit-time-slots-container').html(`
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <p class="text-sm text-yellow-800">
+                                    <i class="fas fa-lock mr-2"></i>
+                                    Date and time cannot be changed. This appointment is assigned to <strong>${staffName}</strong>. Only services can be edited.
+                                </p>
+                            </div>
+                        `);
+                    }
                     
-                    // Disable time slot selection
-                    $('#edit-time-slots-container').html(`
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                            <p class="text-sm text-yellow-800">
-                                <i class="fas fa-info-circle mr-2"></i>
-                                Date and time cannot be changed. This appointment is assigned to <strong>${staffName}</strong>. Only services can be edited.
-                            </p>
-                        </div>
-                    `);
+                    // Lock immediately
+                    lockDateTimeFields();
+                    
+                    // Monitor service changes and re-lock fields
+                    $('#edit-services-container').on('change.lock-datetime', 'input[type="checkbox"]', function() {
+                        // Re-lock after a short delay to ensure it happens after any other handlers
+                        setTimeout(function() {
+                            lockDateTimeFields();
+                        }, 10);
+                    });
+                    
+                    // Continuous monitoring to ensure fields stay locked
+                    const lockInterval = setInterval(function() {
+                        if (editAppointment && editAppointment.hasStaffAssigned) {
+                            lockDateTimeFields();
+                        } else {
+                            clearInterval(lockInterval);
+                        }
+                    }, 100);
                     
                     // Show info message in the form
                     if ($('#edit-staff-assigned-warning').length === 0) {
                         $('#edit-appointment-form').prepend(`
                             <div id="edit-staff-assigned-warning" class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <p class="text-sm text-blue-800">
-                                    <i class="fas fa-info-circle mr-2"></i>
-                                    <strong>Note:</strong> This appointment is assigned to <strong>${staffName}</strong>. You can only edit services and notes. Date and time cannot be changed.
+                                    <i class="fas fa-lock mr-2"></i>
+                                    <strong>Locked:</strong> This appointment is assigned to <strong>${staffName}</strong>. You can only edit services and notes. Date and time cannot be changed.
                                 </p>
                             </div>
                         `);
@@ -948,6 +976,29 @@
             
             // Add change event listener for services
             $('#edit-services-container').on('change.edit-time-slots', 'input[type="checkbox"]', function() {
+                // Update selected service IDs
+                editSelectedServiceIds = [];
+                $('#edit-services-container input[type="checkbox"]:checked').each(function() {
+                    editSelectedServiceIds.push(parseInt($(this).val()));
+                });
+                
+                // If staff is assigned, keep time slots locked - don't load new slots
+                if (editAppointment && editAppointment.hasStaffAssigned) {
+                    // Re-lock the date field and time slots
+                    const staffName = editAppointment.staff ? (editAppointment.staff.name || editAppointment.staff.username || 'a staff member') : 'a staff member';
+                    $('#edit-appointment-date').prop('disabled', true).addClass('bg-gray-100 cursor-not-allowed');
+                    $('#edit-time-slots-container').html(`
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <p class="text-sm text-yellow-800">
+                                <i class="fas fa-lock mr-2"></i>
+                                Date and time cannot be changed. This appointment is assigned to <strong>${staffName}</strong>. Only services can be edited.
+                            </p>
+                        </div>
+                    `);
+                    return; // Don't load time slots
+                }
+                
+                // Only load time slots if staff is NOT assigned
                 if (editSelectedDate && editSelectedServiceIds.length > 0) {
                     loadEditAvailableSlots();
                 } else {
@@ -963,6 +1014,11 @@
 
         // Load available time slots for edit form
         function loadEditAvailableSlots() {
+            // Don't load slots if staff is assigned
+            if (editAppointment && editAppointment.hasStaffAssigned) {
+                return;
+            }
+            
             if (!editSelectedDate || editSelectedServiceIds.length === 0) {
                 return;
             }
