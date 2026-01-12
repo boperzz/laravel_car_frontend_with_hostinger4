@@ -1,6 +1,7 @@
 (function (global) {
     var STATUS = {
         PENDING: 'pending',
+        CONFIRMED: 'confirmed',
         IN_PROGRESS: 'in_progress',
         COMPLETED: 'completed',
         CANCELLED: 'cancelled'
@@ -20,6 +21,15 @@
         }
         if (s === STATUS.PENDING) {
             return 'yellow';
+        }
+        if (s === STATUS.CONFIRMED) {
+            return 'blue';
+        }
+        if (s === STATUS.IN_PROGRESS) {
+            return 'purple';
+        }
+        if (s === STATUS.CANCELLED) {
+            return 'red';
         }
         return 'blue';
     }
