@@ -618,12 +618,16 @@
                 const total = (a.total_price !== null && a.total_price !== undefined) ? `$${parseFloat(a.total_price).toFixed(2)}` : '—';
                 const encoded = encodeURIComponent(JSON.stringify(a));
                 const isPending = String(a.status || '').toLowerCase() === 'pending';
-                const editBtn = isPending ? `
+                const hasStaffAssigned = (a.staff && (a.staff.id || a.staff.name || a.staff.username)) || 
+                                        (a.staff_id !== null && a.staff_id !== undefined);
+                const canEdit = isPending && !hasStaffAssigned;
+                const canCancel = isPending && !hasStaffAssigned;
+                const editBtn = canEdit ? `
                     <button onclick="openEditAppointment('${encoded}')" class="ml-2 border-2 border-black bg-transparent hover:bg-black text-black hover:text-white px-3 py-1 rounded transition">
                         <i class=\"fas fa-edit mr-1\"></i>Edit
                     </button>
                 ` : '';
-                const cancelBtn = isPending ? `
+                const cancelBtn = canCancel ? `
                     <button onclick="cancelAppointment('${encoded}')" class="ml-2 border-2 border-red-600 bg-transparent hover:bg-red-600 text-red-600 hover:text-white px-3 py-1 rounded transition">
                         <i class=\"fas fa-times mr-1\"></i>Cancel
                     </button>
@@ -761,7 +765,13 @@
             }
 
             const isPending = String(a.status || '').toLowerCase() === 'pending';
-            if (!isPending) {
+            const hasStaffAssigned = (a.staff && (a.staff.id || a.staff.name || a.staff.username)) || 
+                                    (a.staff_id !== null && a.staff_id !== undefined);
+            
+            if (!isPending || hasStaffAssigned) {
+                if (hasStaffAssigned) {
+                    showAlert('error', 'Cannot cancel appointment that has been assigned to staff.');
+                }
                 return;
             }
 
